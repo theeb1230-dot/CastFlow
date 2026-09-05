@@ -60,10 +60,9 @@ void main() {
       onError: (Object value) => value,
     );
 
-    await client.send(
-      SignalingMessageType.offer,
-      const <String, Object?>{'sdp': 'v=0'},
-    );
+    await client.send(SignalingMessageType.offer, const <String, Object?>{
+      'sdp': 'v=0',
+    });
 
     expect(
       await error.timeout(const Duration(seconds: 2)),
