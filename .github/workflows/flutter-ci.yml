@@ -1,0 +1,28 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [main, phase-1-foundation]
+  pull_request:
+    branches: [main]
+
+jobs:
+  analyze-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Ensure platform scaffolding
+        run: |
+          flutter create --platforms=android,ios --org com.castflow .
+          rm -f test/widget_test.dart
+      - run: flutter pub get
+      - name: Verify formatting
+        run: |
+          dart format lib test
+          git diff --exit-code -- lib test
+      - run: flutter analyze
+      - run: flutter test
