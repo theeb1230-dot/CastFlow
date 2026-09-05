@@ -109,7 +109,7 @@ class IosSessionRecoveryBinding {
     final Future<void> recovery = _controller
         .onTransportLost()
         .then<void>((SessionRecoveryState _) {})
-        .onError((Object _, StackTrace __) {});
+        .onError((Object _, StackTrace _) {});
     unawaited(recovery);
   }
 }
