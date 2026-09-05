@@ -62,10 +62,7 @@ class AdaptiveCaptureController {
     _appliedProfile = null;
   }
 
-  bool _requiresRestart(
-    StreamingProfile current,
-    StreamingProfile next,
-  ) {
+  bool _requiresRestart(StreamingProfile current, StreamingProfile next) {
     return current.width != next.width ||
         current.height != next.height ||
         current.framesPerSecond != next.framesPerSecond;
