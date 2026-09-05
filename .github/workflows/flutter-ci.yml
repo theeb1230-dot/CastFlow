@@ -75,6 +75,9 @@ jobs:
           grep -q "ReplayKitSpoolBridge.swift" ios/Runner.xcodeproj/project.pbxproj
           grep -q "ReplayKitSpoolBridge.register(with:" ios/Runner/AppDelegate.swift
           grep -q "castflow/replaykit_encoded/events" ios/Runner/ReplayKitSpoolBridge.swift
+          grep -q "ReplayKitLifecycleBridge.swift" ios/Runner.xcodeproj/project.pbxproj
+          grep -q "ReplayKitLifecycleBridge.register(with:" ios/Runner/AppDelegate.swift
+          grep -q "castflow/replaykit_lifecycle/events" ios/Runner/ReplayKitLifecycleBridge.swift
       - run: flutter pub get
       - name: Build iOS simulator with ReplayKit, VideoToolbox, and Runner bridge
         run: flutter build ios --simulator --debug
