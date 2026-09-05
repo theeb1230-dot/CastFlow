@@ -6,6 +6,10 @@ import android.content.Intent
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.ResultReceiver
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -22,9 +26,19 @@ class MediaProjectionSessionBridge(
     private val methodChannel = MethodChannel(messenger, channelName)
     private val projectionManager =
         activity.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     private var pendingResult: MethodChannel.Result? = null
+    private var pendingConsentResultCode: Int? = null
+    private var pendingConsentData: Intent? = null
     private var mediaProjection: MediaProjection? = null
+
+    private val projectionCallback = object : MediaProjection.Callback() {
+        override fun onStop() {
+            mediaProjection = null
+            stopForegroundService()
+        }
+    }
 
     init {
         methodChannel.setMethodCallHandler(this)
@@ -52,15 +66,10 @@ class MediaProjectionSessionBridge(
             return false
         }
 
-        val result = pendingResult
-        pendingResult = null
-
-        if (result == null) {
-            return true
-        }
-
         if (resultCode != Activity.RESULT_OK || data == null) {
-            result.error(
+            val result = pendingResult
+            clearPendingConsent()
+            result?.error(
                 "media_projection_denied",
                 "Screen capture permission was not granted.",
                 null,
@@ -68,25 +77,15 @@ class MediaProjectionSessionBridge(
             return true
         }
 
-        return try {
-            startForegroundService()
-            mediaProjection = projectionManager.getMediaProjection(resultCode, data)
-            result.success(null)
-            true
-        } catch (error: Throwable) {
-            stopForegroundService()
-            result.error(
-                "media_projection_start_failed",
-                error.message ?: "Unable to start MediaProjection.",
-                null,
-            )
-            true
-        }
+        pendingConsentResultCode = resultCode
+        pendingConsentData = data
+        startForegroundServiceAndWait()
+        return true
     }
 
     fun dispose() {
         val result = pendingResult
-        pendingResult = null
+        clearPendingConsent()
         result?.error(
             "activity_disposed",
             "MediaProjection request was interrupted.",
@@ -118,19 +117,69 @@ class MediaProjectionSessionBridge(
         )
     }
 
-    private fun stop() {
-        mediaProjection?.stop()
-        mediaProjection = null
-        stopForegroundService()
-    }
+    private fun startForegroundServiceAndWait() {
+        val receiver = object : ResultReceiver(mainHandler) {
+            override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+                if (resultCode != ScreenCaptureForegroundService.readyResultCode) {
+                    failStart("Screen capture foreground service failed to become ready.")
+                    return
+                }
+                createProjectionAfterForegroundReady()
+            }
+        }
 
-    private fun startForegroundService() {
-        val intent = Intent(activity, ScreenCaptureForegroundService::class.java)
+        val intent = Intent(activity, ScreenCaptureForegroundService::class.java).apply {
+            putExtra(ScreenCaptureForegroundService.extraReadyReceiver, receiver)
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             activity.startForegroundService(intent)
         } else {
             activity.startService(intent)
         }
+    }
+
+    private fun createProjectionAfterForegroundReady() {
+        val result = pendingResult
+        val resultCode = pendingConsentResultCode
+        val data = pendingConsentData
+
+        if (result == null || resultCode == null || data == null) {
+            failStart("MediaProjection consent state was lost.")
+            return
+        }
+
+        try {
+            val projection = projectionManager.getMediaProjection(resultCode, data)
+            projection.registerCallback(projectionCallback, mainHandler)
+            mediaProjection = projection
+            clearPendingConsent(keepResult = false)
+            result.success(null)
+        } catch (error: Throwable) {
+            failStart(error.message ?: "Unable to start MediaProjection.")
+        }
+    }
+
+    private fun failStart(message: String) {
+        val result = pendingResult
+        clearPendingConsent()
+        stopForegroundService()
+        result?.error("media_projection_start_failed", message, null)
+    }
+
+    private fun clearPendingConsent(keepResult: Boolean = false) {
+        if (!keepResult) {
+            pendingResult = null
+        }
+        pendingConsentResultCode = null
+        pendingConsentData = null
+    }
+
+    private fun stop() {
+        mediaProjection?.unregisterCallback(projectionCallback)
+        mediaProjection?.stop()
+        mediaProjection = null
+        stopForegroundService()
     }
 
     private fun stopForegroundService() {
