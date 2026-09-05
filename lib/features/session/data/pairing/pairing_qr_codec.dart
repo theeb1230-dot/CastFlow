@@ -11,7 +11,9 @@ class PairingQrCodec {
 
   String encode(HandshakePayload payload) {
     final String json = jsonEncode(payload.toJson());
-    final String encoded = base64UrlEncode(utf8.encode(json)).replaceAll('=', '');
+    final String encoded = base64UrlEncode(
+      utf8.encode(json),
+    ).replaceAll('=', '');
     return '$prefix$encoded';
   }
 
@@ -36,14 +38,18 @@ class PairingQrCodec {
     }
 
     if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('CastFlow pairing payload must be an object.');
+      throw const FormatException(
+        'CastFlow pairing payload must be an object.',
+      );
     }
 
     final HandshakePayload payload;
     try {
       payload = HandshakePayload.fromJson(decoded);
     } catch (_) {
-      throw const FormatException('CastFlow pairing payload fields are invalid.');
+      throw const FormatException(
+        'CastFlow pairing payload fields are invalid.',
+      );
     }
 
     if (payload.version != supportedVersion ||
@@ -59,7 +65,9 @@ class PairingQrCodec {
         payload.port > 65535 ||
         payload.token.length < 24 ||
         payload.token.length > 256) {
-      throw const FormatException('CastFlow pairing payload failed validation.');
+      throw const FormatException(
+        'CastFlow pairing payload failed validation.',
+      );
     }
 
     final int nowSeconds =
