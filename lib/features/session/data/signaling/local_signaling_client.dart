@@ -74,8 +74,9 @@ class LocalSignalingClient implements SignalingTransport {
   }) async {
     await connect(timeout: timeout);
 
+    final Random random = Random.secure();
     final String nonce = base64UrlEncode(
-      List<int>.generate(18, (_) => Random.secure().nextInt(256)),
+      List<int>.generate(18, (_) => random.nextInt(256)),
     ).replaceAll('=', '');
 
     final Future<SignalingMessage> acknowledgement = messages
