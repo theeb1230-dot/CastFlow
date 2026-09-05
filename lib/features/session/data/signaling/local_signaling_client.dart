@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import '../../domain/entities/signaling_message.dart';
 import '../../domain/repositories/signaling_transport.dart';
@@ -66,6 +67,30 @@ class LocalSignalingClient implements SignalingTransport {
             }
           },
         );
+  }
+
+  Future<void> connectAuthenticated({
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    await connect(timeout: timeout);
+
+    final String nonce = base64UrlEncode(
+      List<int>.generate(18, (_) => Random.secure().nextInt(256)),
+    ).replaceAll('=', '');
+
+    final Future<SignalingMessage> acknowledgement = messages
+        .firstWhere(
+          (SignalingMessage message) =>
+              message.type == SignalingMessageType.pairingAck &&
+              message.payload['nonce'] == nonce,
+        )
+        .timeout(timeout);
+
+    await send(
+      SignalingMessageType.pairingHello,
+      <String, Object?>{'nonce': nonce},
+    );
+    await acknowledgement;
   }
 
   @override
