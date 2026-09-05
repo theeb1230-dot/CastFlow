@@ -1,16 +1,29 @@
+import 'dart:collection';
 import 'dart:typed_data';
 
 import '../../domain/entities/encoded_video_chunk.dart';
 import '../../domain/entities/encoded_video_packet.dart';
 
 class EncodedVideoReassembler {
-  final Map<int, _PendingPacket> _pending = <int, _PendingPacket>{};
+  EncodedVideoReassembler({this.maxPendingPackets = 8}) {
+    if (maxPendingPackets <= 0) {
+      throw ArgumentError.value(
+        maxPendingPackets,
+        'maxPendingPackets',
+        'Must be positive.',
+      );
+    }
+  }
+
+  final int maxPendingPackets;
+  final LinkedHashMap<int, _PendingPacket> _pending =
+      LinkedHashMap<int, _PendingPacket>();
 
   EncodedVideoPacket? add(EncodedVideoChunk chunk) {
-    final _PendingPacket pending = _pending.putIfAbsent(
-      chunk.sequence,
-      () => _PendingPacket.fromChunk(chunk),
-    );
+    final _PendingPacket pending = _pending.putIfAbsent(chunk.sequence, () {
+      _evictOldestIfNeeded();
+      return _PendingPacket.fromChunk(chunk);
+    });
 
     if (!pending.matches(chunk)) {
       _pending.remove(chunk.sequence);
@@ -29,6 +42,12 @@ class EncodedVideoReassembler {
 
   void clear() {
     _pending.clear();
+  }
+
+  void _evictOldestIfNeeded() {
+    while (_pending.length >= maxPendingPackets && _pending.isNotEmpty) {
+      _pending.remove(_pending.keys.first);
+    }
   }
 }
 
