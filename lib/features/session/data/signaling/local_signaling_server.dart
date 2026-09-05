@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../domain/entities/signaling_message.dart';
-import '../handshake/handshake_codec.dart';
+import '../../domain/entities/handshake_payload.dart';
 import 'signaling_codec.dart';
 
 class LocalSignalingServer {
@@ -112,21 +112,11 @@ class LocalSignalingServer {
     }
   }
 
-  static LocalSignalingServer fromHandshake(
-    HandshakePayloadView handshake,
-  ) {
+  factory LocalSignalingServer.fromHandshake(HandshakePayload handshake) {
     return LocalSignalingServer(
       sessionId: handshake.sessionId,
       token: handshake.token,
       port: handshake.port,
     );
   }
-}
-
-abstract interface class HandshakePayloadView {
-  String get sessionId;
-
-  String get token;
-
-  int get port;
 }
