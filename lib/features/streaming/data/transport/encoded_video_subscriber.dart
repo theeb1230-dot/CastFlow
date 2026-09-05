@@ -29,21 +29,18 @@ class EncodedVideoSubscriber {
       return;
     }
 
-    _subscription = _transport.messages.listen(
-      (bytes) {
-        try {
-          final packet = _reassembler.add(_codec.decode(bytes));
-          if (packet != null && !_packetsController.isClosed) {
-            _packetsController.add(packet);
-          }
-        } catch (error, stackTrace) {
-          if (!_packetsController.isClosed) {
-            _packetsController.addError(error, stackTrace);
-          }
+    _subscription = _transport.messages.listen((bytes) {
+      try {
+        final packet = _reassembler.add(_codec.decode(bytes));
+        if (packet != null && !_packetsController.isClosed) {
+          _packetsController.add(packet);
         }
-      },
-      onError: _packetsController.addError,
-    );
+      } catch (error, stackTrace) {
+        if (!_packetsController.isClosed) {
+          _packetsController.addError(error, stackTrace);
+        }
+      }
+    }, onError: _packetsController.addError);
   }
 
   Future<void> dispose() async {
