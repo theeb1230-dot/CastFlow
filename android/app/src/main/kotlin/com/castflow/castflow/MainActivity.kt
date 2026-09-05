@@ -8,6 +8,7 @@ class MainActivity : FlutterActivity() {
     private lateinit var wifiDirectBridge: WifiDirectBridge
     private lateinit var screenCaptureBridge: ScreenCaptureBridge
     private lateinit var mediaProjectionSessionBridge: MediaProjectionSessionBridge
+    private lateinit var hardwareEncoderBridge: HardwareEncoderBridge
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -21,6 +22,10 @@ class MainActivity : FlutterActivity() {
         )
         mediaProjectionSessionBridge = MediaProjectionSessionBridge(
             activity = this,
+            messenger = flutterEngine.dartExecutor.binaryMessenger,
+        )
+        hardwareEncoderBridge = HardwareEncoderBridge(
+            projectionBridge = mediaProjectionSessionBridge,
             messenger = flutterEngine.dartExecutor.binaryMessenger,
         )
     }
@@ -54,6 +59,9 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        if (::hardwareEncoderBridge.isInitialized) {
+            hardwareEncoderBridge.dispose()
+        }
         if (::mediaProjectionSessionBridge.isInitialized) {
             mediaProjectionSessionBridge.dispose()
         }
