@@ -29,9 +29,6 @@ void main() {
       throwsA(isA<FormatException>()),
     );
 
-    expect(
-      () => decoder.decode('invalid'),
-      throwsA(isA<FormatException>()),
-    );
+    expect(() => decoder.decode('invalid'), throwsA(isA<FormatException>()));
   });
 }
