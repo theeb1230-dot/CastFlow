@@ -4,13 +4,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../domain/entities/screen_capture_config.dart';
+import '../../domain/services/android_screen_capture_runtime_policy.dart';
 
 class AndroidScreenCaptureService {
   AndroidScreenCaptureService({
     MethodChannel channel = const MethodChannel('castflow/screen_capture'),
-  }) : _channel = channel;
+    AndroidScreenCaptureRuntimePolicy runtimePolicy =
+        const AndroidScreenCaptureRuntimePolicy(),
+  }) : _channel = channel,
+       _runtimePolicy = runtimePolicy;
 
   final MethodChannel _channel;
+  final AndroidScreenCaptureRuntimePolicy _runtimePolicy;
   MediaStream? _activeStream;
 
   MediaStream? get activeStream => _activeStream;
@@ -23,6 +28,15 @@ class AndroidScreenCaptureService {
     }
     if (_activeStream != null) {
       throw StateError('Screen capture is already active.');
+    }
+
+    final int sdkInt = await _channel.invokeMethod<int>('getSdkInt') ?? 0;
+    if (!_runtimePolicy.supportsLegacyGetDisplayMediaFlow(sdkInt)) {
+      throw UnsupportedError(
+        'Android 14+ requires a native MediaProjection consent-to-FGS '
+        'handoff before WebRTC capture. The current flutter_webrtc '
+        'getDisplayMedia flow does not expose that handoff point.',
+      );
     }
 
     await _channel.invokeMethod<void>('startForegroundService');

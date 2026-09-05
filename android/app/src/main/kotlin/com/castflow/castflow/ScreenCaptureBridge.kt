@@ -23,6 +23,7 @@ class ScreenCaptureBridge(
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
+            "getSdkInt" -> result.success(Build.VERSION.SDK_INT)
             "startForegroundService" -> {
                 startForegroundService()
                 result.success(null)
