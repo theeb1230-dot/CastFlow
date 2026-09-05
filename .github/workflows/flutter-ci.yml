@@ -24,6 +24,8 @@ jobs:
           grep -q "android.intent.category.LEANBACK_LAUNCHER" android/app/src/main/AndroidManifest.xml
           grep -q "android.permission.CHANGE_WIFI_MULTICAST_STATE" android/app/src/main/AndroidManifest.xml
           grep -q "android.permission.NEARBY_WIFI_DEVICES" android/app/src/main/AndroidManifest.xml
+          grep -q "android.permission.ACCESS_FINE_LOCATION" android/app/src/main/AndroidManifest.xml
+          grep -q "castflow/wifi_direct" android/app/src/main/kotlin/com/castflow/castflow/WifiDirectBridge.kt
           grep -q "NSLocalNetworkUsageDescription" ios/Runner/Info.plist
           grep -q "_castflow._tcp" ios/Runner/Info.plist
       - run: flutter pub get
@@ -33,3 +35,5 @@ jobs:
           git diff --exit-code -- lib test
       - run: flutter analyze
       - run: flutter test
+      - name: Android native compile smoke test
+        run: flutter build apk --debug
