@@ -4,9 +4,10 @@ import 'dart:io';
 
 import '../../domain/entities/signaling_message.dart';
 import '../../domain/entities/handshake_payload.dart';
+import '../../domain/repositories/signaling_transport.dart';
 import 'signaling_codec.dart';
 
-class LocalSignalingServer {
+class LocalSignalingServer implements SignalingTransport {
   LocalSignalingServer({
     required this.sessionId,
     required this.token,
@@ -28,6 +29,7 @@ class LocalSignalingServer {
   final Set<Socket> _clients = <Socket>{};
   ServerSocket? _server;
 
+  @override
   Stream<SignalingMessage> get messages => _messagesController.stream;
 
   int get boundPort {
@@ -48,8 +50,17 @@ class LocalSignalingServer {
     server.listen(_acceptClient);
   }
 
-  Future<void> broadcast(SignalingMessage message) async {
-    _validateEnvelope(message);
+  @override
+  Future<void> send(
+    SignalingMessageType type,
+    Map<String, Object?> payload,
+  ) async {
+    final SignalingMessage message = SignalingMessage(
+      type: type,
+      sessionId: sessionId,
+      token: token,
+      payload: payload,
+    );
 
     final List<int> bytes = utf8.encode('${_codec.encode(message)}\n');
     for (final Socket socket in _clients.toList(growable: false)) {
