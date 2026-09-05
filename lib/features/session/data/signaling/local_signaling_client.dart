@@ -28,9 +28,7 @@ class LocalSignalingClient {
 
   Stream<SignalingMessage> get messages => _messagesController.stream;
 
-  Future<void> connect({
-    Duration timeout = const Duration(seconds: 5),
-  }) async {
+  Future<void> connect({Duration timeout = const Duration(seconds: 5)}) async {
     if (_socket != null) {
       return;
     }
