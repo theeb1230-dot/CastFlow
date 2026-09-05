@@ -20,6 +20,9 @@ jobs:
           flutter create --platforms=android,ios --org com.castflow .
           rm -f test/widget_test.dart
       - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed lib test
+      - name: Verify formatting
+        run: |
+          dart format lib test
+          git diff --exit-code -- lib test
       - run: flutter analyze
       - run: flutter test
