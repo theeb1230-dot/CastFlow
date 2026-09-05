@@ -12,16 +12,17 @@ abort('Runner target not found') unless runner
 extension_name = 'BroadcastUploadExtension'
 extension_target = project.targets.find { |target| target.name == extension_name }
 
-group = project.main_group.find_subpath(extension_name, true)
-group.set_source_tree('<group>')
-group.path = extension_name
+extension_group = project.main_group.find_subpath(extension_name, true)
+extension_group.set_source_tree('<group>')
+extension_group.path = extension_name
 
-source_paths = %w[
+extension_source_paths = %w[
   SampleHandler.swift
   VideoToolboxH264Encoder.swift
 ]
-source_refs = source_paths.map do |source_path|
-  group.files.find { |file| file.path == source_path } || group.new_file(source_path)
+extension_source_refs = extension_source_paths.map do |source_path|
+  extension_group.files.find { |file| file.path == source_path } ||
+    extension_group.new_file(source_path)
 end
 
 unless extension_target
@@ -33,7 +34,7 @@ unless extension_target
   )
 end
 
-source_refs.each do |source_ref|
+extension_source_refs.each do |source_ref|
   unless extension_target.source_build_phase.files_references.include?(source_ref)
     extension_target.add_file_references([source_ref])
   end
@@ -54,6 +55,33 @@ extension_target.build_configurations.each do |config|
   config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
   config.build_settings['APPLICATION_EXTENSION_API_ONLY'] = 'YES'
   config.build_settings['SKIP_INSTALL'] = 'YES'
+end
+
+runner_group = project.main_group.find_subpath('Runner', true)
+runner_source_path = 'ReplayKitSpoolBridge.swift'
+runner_source_ref =
+  runner_group.files.find { |file| file.path == runner_source_path } ||
+  runner_group.new_file(runner_source_path)
+unless runner.source_build_phase.files_references.include?(runner_source_ref)
+  runner.add_file_references([runner_source_ref])
+end
+
+app_delegate_path = File.expand_path('../ios/Runner/AppDelegate.swift', __dir__)
+registration_line = 'ReplayKitSpoolBridge.register(with: self)'
+unless File.exist?(app_delegate_path)
+  abort('Generated AppDelegate.swift not found')
+end
+
+app_delegate = File.read(app_delegate_path)
+unless app_delegate.include?(registration_line)
+  marker = 'GeneratedPluginRegistrant.register(with: self)'
+  abort('GeneratedPluginRegistrant marker not found in AppDelegate.swift') unless app_delegate.include?(marker)
+
+  app_delegate = app_delegate.sub(
+    marker,
+    "#{marker}\n    #{registration_line}"
+  )
+  File.write(app_delegate_path, app_delegate)
 end
 
 runner.build_configurations.each do |config|
