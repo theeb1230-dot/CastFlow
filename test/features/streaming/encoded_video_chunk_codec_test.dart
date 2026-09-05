@@ -33,6 +33,35 @@ void main() {
     expect(completed.flags, packet.flags);
   });
 
+  test('evicts incomplete old frames when pending capacity is exceeded', () {
+    const EncodedVideoChunkCodec codec = EncodedVideoChunkCodec(
+      maxPayloadBytes: 2,
+    );
+    final EncodedVideoReassembler reassembler = EncodedVideoReassembler(
+      maxPendingPackets: 1,
+    );
+
+    final EncodedVideoPacket first = EncodedVideoPacket(
+      data: Uint8List.fromList(<int>[1, 2, 3, 4]),
+      presentationTimeUs: 100,
+      flags: 0,
+    );
+    final EncodedVideoPacket second = EncodedVideoPacket(
+      data: Uint8List.fromList(<int>[5, 6, 7, 8]),
+      presentationTimeUs: 200,
+      flags: 0,
+    );
+
+    final firstChunks = codec.split(packet: first, sequence: 1);
+    final secondChunks = codec.split(packet: second, sequence: 2);
+
+    expect(reassembler.add(firstChunks.first), isNull);
+    expect(reassembler.add(secondChunks.first), isNull);
+    expect(reassembler.add(secondChunks.last), isNotNull);
+
+    expect(reassembler.add(firstChunks.last), isNull);
+  });
+
   test('rejects corrupted magic', () {
     const EncodedVideoChunkCodec codec = EncodedVideoChunkCodec();
     final bytes = Uint8List(28);
