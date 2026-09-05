@@ -87,6 +87,18 @@ class WebRtcOrchestrator {
     return _requirePeerConnection().restartIce();
   }
 
+  Future<List<RTCRtpSender>> attachLocalStream(MediaStream stream) async {
+    final RTCPeerConnection peerConnection = _requirePeerConnection();
+    final List<RTCRtpSender> senders = <RTCRtpSender>[];
+
+    for (final MediaStreamTrack track in stream.getTracks()) {
+      final RTCRtpSender sender = await peerConnection.addTrack(track, stream);
+      senders.add(sender);
+    }
+
+    return List<RTCRtpSender>.unmodifiable(senders);
+  }
+
   Future<ConnectionMetrics> collectConnectionMetrics() async {
     final List<StatsReport> reports = await _requirePeerConnection().getStats();
     return _statsParser.parse(reports);

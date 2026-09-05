@@ -26,6 +26,8 @@ jobs:
           grep -q "android.permission.NEARBY_WIFI_DEVICES" android/app/src/main/AndroidManifest.xml
           grep -q "android.permission.ACCESS_FINE_LOCATION" android/app/src/main/AndroidManifest.xml
           grep -q "castflow/wifi_direct" android/app/src/main/kotlin/com/castflow/castflow/WifiDirectBridge.kt
+          grep -q "castflow/screen_capture" android/app/src/main/kotlin/com/castflow/castflow/ScreenCaptureBridge.kt
+          grep -q 'android:foregroundServiceType="mediaProjection"' android/app/src/main/AndroidManifest.xml
           grep -q "NSLocalNetworkUsageDescription" ios/Runner/Info.plist
           grep -q "_castflow._tcp" ios/Runner/Info.plist
       - run: flutter pub get

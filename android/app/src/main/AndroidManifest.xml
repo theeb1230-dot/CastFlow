@@ -47,6 +47,11 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name=".ScreenCaptureForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
