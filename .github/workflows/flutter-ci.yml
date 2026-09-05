@@ -16,7 +16,9 @@ jobs:
           channel: stable
           cache: true
       - name: Ensure platform scaffolding
-        run: flutter create --platforms=android,ios --org com.castflow .
+        run: |
+          flutter create --platforms=android,ios --org com.castflow .
+          rm -f test/widget_test.dart
       - run: flutter pub get
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
