@@ -87,9 +87,9 @@ void main() {
 
     final List<Future<SessionRecoveryState>> calls =
         List<Future<SessionRecoveryState>>.generate(
-      1000,
-      (_) => controller.onTransportLost(),
-    );
+          1000,
+          (_) => controller.onTransportLost(),
+        );
 
     await Future<void>.delayed(Duration.zero);
     expect(port.restartCalls, 1);
@@ -105,31 +105,34 @@ void main() {
     expect(controller.attempts, 0);
   });
 
-  test('ABR survives sustained alternating network pressure without invalid state', () {
-    final AdaptiveBitrateController controller = AdaptiveBitrateController(
-      initialProfile: StreamingProfile.balanced,
-      degradeSampleThreshold: 2,
-      upgradeSampleThreshold: 5,
-    );
+  test(
+    'ABR survives sustained alternating network pressure without invalid state',
+    () {
+      final AdaptiveBitrateController controller = AdaptiveBitrateController(
+        initialProfile: StreamingProfile.balanced,
+        degradeSampleThreshold: 2,
+        upgradeSampleThreshold: 5,
+      );
 
-    for (int i = 0; i < 10000; i++) {
-      final StreamingProfile profile = controller.ingest(
-        i.isEven ? _degraded() : _healthy(),
-      );
-      expect(
-        profile.level,
-        isIn(<StreamingProfileLevel>[
-          StreamingProfileLevel.low,
-          StreamingProfileLevel.balanced,
-          StreamingProfileLevel.high,
-        ]),
-      );
-      expect(profile.targetBitrateBps, greaterThan(0));
-      expect(profile.framesPerSecond, greaterThan(0));
-      expect(profile.width, greaterThan(0));
-      expect(profile.height, greaterThan(0));
-    }
-  });
+      for (int i = 0; i < 10000; i++) {
+        final StreamingProfile profile = controller.ingest(
+          i.isEven ? _degraded() : _healthy(),
+        );
+        expect(
+          profile.level,
+          isIn(<StreamingProfileLevel>[
+            StreamingProfileLevel.low,
+            StreamingProfileLevel.balanced,
+            StreamingProfileLevel.high,
+          ]),
+        );
+        expect(profile.targetBitrateBps, greaterThan(0));
+        expect(profile.framesPerSecond, greaterThan(0));
+        expect(profile.width, greaterThan(0));
+        expect(profile.height, greaterThan(0));
+      }
+    },
+  );
 
   test('stress gates complete within generous CI budget', () {
     const EncodedVideoChunkCodec codec = EncodedVideoChunkCodec(
