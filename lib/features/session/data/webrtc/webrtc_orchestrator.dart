@@ -6,8 +6,9 @@ import '../../domain/entities/connection_metrics.dart';
 import 'webrtc_stats_parser.dart';
 
 class WebRtcOrchestrator {
-  WebRtcOrchestrator({WebRtcStatsParser statsParser = const WebRtcStatsParser()})
-    : _statsParser = statsParser;
+  WebRtcOrchestrator({
+    WebRtcStatsParser statsParser = const WebRtcStatsParser(),
+  }) : _statsParser = statsParser;
 
   final WebRtcStatsParser _statsParser;
   RTCPeerConnection? _peerConnection;
