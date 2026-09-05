@@ -22,9 +22,7 @@ class WebRtcStatsParser {
           if (values['state'] == 'succeeded' ||
               values['selected'] == true ||
               values['nominated'] == true) {
-            roundTripTimeSeconds ??= _asDouble(
-              values['currentRoundTripTime'],
-            );
+            roundTripTimeSeconds ??= _asDouble(values['currentRoundTripTime']);
             availableOutgoingBitrateBps ??= _asDouble(
               values['availableOutgoingBitrate'],
             );
