@@ -35,6 +35,10 @@ end
 extension_target.build_configurations.each do |config|
   config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] =
     'com.castflow.castflow.BroadcastUploadExtension'
+  config.build_settings['PRODUCT_NAME'] = extension_name
+  config.build_settings['PRODUCT_MODULE_NAME'] = extension_name
+  config.build_settings['EXECUTABLE_NAME'] = '$(PRODUCT_NAME)'
+  config.build_settings['WRAPPER_EXTENSION'] = 'appex'
   config.build_settings['INFOPLIST_FILE'] =
     'BroadcastUploadExtension/Info.plist'
   config.build_settings['CODE_SIGN_ENTITLEMENTS'] =
