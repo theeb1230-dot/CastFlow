@@ -9,6 +9,7 @@ class MainActivity : FlutterActivity() {
     private lateinit var screenCaptureBridge: ScreenCaptureBridge
     private lateinit var mediaProjectionSessionBridge: MediaProjectionSessionBridge
     private lateinit var hardwareEncoderBridge: HardwareEncoderBridge
+    private lateinit var hardwareDecoderBridge: HardwareDecoderBridge
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -27,6 +28,10 @@ class MainActivity : FlutterActivity() {
         hardwareEncoderBridge = HardwareEncoderBridge(
             projectionBridge = mediaProjectionSessionBridge,
             messenger = flutterEngine.dartExecutor.binaryMessenger,
+        )
+        hardwareDecoderBridge = HardwareDecoderBridge(
+            messenger = flutterEngine.dartExecutor.binaryMessenger,
+            textureRegistry = flutterEngine.renderer,
         )
     }
 
@@ -59,6 +64,9 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        if (::hardwareDecoderBridge.isInitialized) {
+            hardwareDecoderBridge.dispose()
+        }
         if (::hardwareEncoderBridge.isInitialized) {
             hardwareEncoderBridge.dispose()
         }
