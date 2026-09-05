@@ -15,24 +15,22 @@ abstract final class AppTheme {
   );
 
   static ThemeData get darkTheme => ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: bgDark,
-        colorScheme: const ColorScheme.dark(
-          primary: primaryCyan,
-          secondary: secondaryBlue,
-          surface: surfaceDark,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          foregroundColor: textPrimary,
-          elevation: 0,
-        ),
-        cardTheme: CardThemeData(
-          color: surfaceDark,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      );
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    scaffoldBackgroundColor: bgDark,
+    colorScheme: const ColorScheme.dark(
+      primary: primaryCyan,
+      secondary: secondaryBlue,
+      surface: surfaceDark,
+    ),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.transparent,
+      foregroundColor: textPrimary,
+      elevation: 0,
+    ),
+    cardTheme: CardThemeData(
+      color: surfaceDark,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+  );
 }
