@@ -108,7 +108,7 @@ class _DashboardViewState extends State<_DashboardView>
                             if (scanning)
                               AnimatedBuilder(
                                 animation: _radarController,
-                                builder: (_, __) {
+                                builder: (_, _) {
                                   final double value = _radarController.value;
                                   return Container(
                                     width: 80 + (200 * value),
