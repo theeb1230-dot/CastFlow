@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:castflow/features/session/data/signaling/local_signaling_client.dart';
@@ -34,6 +35,71 @@ void main() {
 
     expect(message.type, SignalingMessageType.offer);
     expect(message.payload['sdp'], 'v=0');
+
+    await client.dispose();
+    await server.dispose();
+  });
+
+
+  test('does not broadcast signaling to unauthenticated sockets', () async {
+    final LocalSignalingServer server = LocalSignalingServer(
+      sessionId: 'session-1',
+      token: 'token-1',
+      address: InternetAddress.loopbackIPv4,
+    );
+    await server.start();
+
+    final LocalSignalingClient client = LocalSignalingClient(
+      host: InternetAddress.loopbackIPv4.address,
+      port: server.boundPort,
+      sessionId: 'session-1',
+      token: 'token-1',
+    );
+    await client.connect();
+
+    final Future<SignalingMessage> received = client.messages.first.timeout(
+      const Duration(milliseconds: 200),
+    );
+
+    await server.send(SignalingMessageType.answer, const <String, Object?>{
+      'sdp': 'v=0',
+    });
+
+    await expectLater(received, throwsA(isA<TimeoutException>()));
+
+    await client.dispose();
+    await server.dispose();
+  });
+
+  test('rejects signaling before pairing authentication completes', () async {
+    final LocalSignalingServer server = LocalSignalingServer(
+      sessionId: 'session-1',
+      token: 'token-1',
+      address: InternetAddress.loopbackIPv4,
+    );
+    await server.start();
+
+    final LocalSignalingClient client = LocalSignalingClient(
+      host: InternetAddress.loopbackIPv4.address,
+      port: server.boundPort,
+      sessionId: 'session-1',
+      token: 'token-1',
+    );
+    await client.connect();
+
+    final Future<Object> error = server.messages.first.then<Object>(
+      (SignalingMessage _) => StateError('Expected authentication rejection.'),
+      onError: (Object value) => value,
+    );
+
+    await client.send(SignalingMessageType.offer, const <String, Object?>{
+      'sdp': 'v=0',
+    });
+
+    expect(
+      await error.timeout(const Duration(seconds: 2)),
+      isA<FormatException>(),
+    );
 
     await client.dispose();
     await server.dispose();
