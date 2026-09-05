@@ -73,14 +73,25 @@ unless File.exist?(app_delegate_path)
 end
 
 app_delegate = File.read(app_delegate_path)
-unless app_delegate.include?(registration_line)
-  marker = 'GeneratedPluginRegistrant.register(with: self)'
-  abort('GeneratedPluginRegistrant marker not found in AppDelegate.swift') unless app_delegate.include?(marker)
+unless app_delegate.include?('ReplayKitSpoolBridge.register(')
+  implicit_marker =
+    'GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)'
+  legacy_marker = 'GeneratedPluginRegistrant.register(with: self)'
 
-  app_delegate = app_delegate.sub(
-    marker,
-    "#{marker}\n    #{registration_line}"
-  )
+  if app_delegate.include?(implicit_marker)
+    app_delegate = app_delegate.sub(
+      implicit_marker,
+      "#{implicit_marker}\n    ReplayKitSpoolBridge.register(with: engineBridge.pluginRegistry)"
+    )
+  elsif app_delegate.include?(legacy_marker)
+    app_delegate = app_delegate.sub(
+      legacy_marker,
+      "#{legacy_marker}\n    #{registration_line}"
+    )
+  else
+    abort('Generated plugin registration marker not found in AppDelegate.swift')
+  end
+
   File.write(app_delegate_path, app_delegate)
 end
 
