@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:castflow/features/connectivity/domain/entities/pairing_payload.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,20 +26,22 @@ void main() {
       );
     });
 
-    test('rejects invalid port', () {
-      final String encoded = PairingPayload(
-        sessionId: 'session-123',
-        host: '192.168.1.20',
-        port: 45678,
-        expiresAt: DateTime.utc(2030),
-        protocolVersion: 1,
-      ).encode();
-
-      final String tampered = encoded.replaceAll('A', 'B');
+    test('rejects out-of-range port', () {
+      final String encoded = base64Url.encode(
+        utf8.encode(
+          jsonEncode(<String, Object>{
+            'v': 1,
+            'sid': 'session-123',
+            'host': '192.168.1.20',
+            'port': 70000,
+            'exp': DateTime.utc(2030).millisecondsSinceEpoch,
+          }),
+        ),
+      );
 
       expect(
-        () => PairingPayload.decode(tampered),
-        throwsA(anything),
+        () => PairingPayload.decode(encoded),
+        throwsA(isA<FormatException>()),
       );
     });
   });
