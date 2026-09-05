@@ -22,9 +22,8 @@ void main() {
 
   test('rejects unsupported signaling message type', () {
     expect(
-      () => codec.decode(
-        '{"type":"mystery","sid":"s","token":"t","payload":{}}',
-      ),
+      () =>
+          codec.decode('{"type":"mystery","sid":"s","token":"t","payload":{}}'),
       throwsA(isA<FormatException>()),
     );
   });
