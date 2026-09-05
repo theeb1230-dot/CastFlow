@@ -44,6 +44,9 @@ class SignalingSessionBridge {
 
   Future<void> _handleMessage(SignalingMessage message) async {
     switch (message.type) {
+      case SignalingMessageType.pairingHello:
+      case SignalingMessageType.pairingAck:
+        return;
       case SignalingMessageType.offer:
         final Map<String, Object?> answer = await _rtc.acceptOffer(
           message.payload,
