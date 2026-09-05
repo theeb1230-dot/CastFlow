@@ -58,36 +58,52 @@ extension_target.build_configurations.each do |config|
 end
 
 runner_group = project.main_group.find_subpath('Runner', true)
-runner_source_path = 'ReplayKitSpoolBridge.swift'
-runner_source_ref =
-  runner_group.files.find { |file| file.path == runner_source_path } ||
-  runner_group.new_file(runner_source_path)
-unless runner.source_build_phase.files_references.include?(runner_source_ref)
-  runner.add_file_references([runner_source_ref])
+runner_source_paths = %w[
+  ReplayKitSpoolBridge.swift
+  ReplayKitLifecycleBridge.swift
+]
+runner_source_refs = runner_source_paths.map do |source_path|
+  runner_group.files.find { |file| file.path == source_path } ||
+    runner_group.new_file(source_path)
+end
+runner_source_refs.each do |source_ref|
+  unless runner.source_build_phase.files_references.include?(source_ref)
+    runner.add_file_references([source_ref])
+  end
 end
 
 app_delegate_path = File.expand_path('../ios/Runner/AppDelegate.swift', __dir__)
-registration_line = 'ReplayKitSpoolBridge.register(with: self)'
+legacy_registrations = [
+  'ReplayKitSpoolBridge.register(with: self)',
+  'ReplayKitLifecycleBridge.register(with: self)'
+]
 unless File.exist?(app_delegate_path)
   abort('Generated AppDelegate.swift not found')
 end
 
 app_delegate = File.read(app_delegate_path)
-unless app_delegate.include?('ReplayKitSpoolBridge.register(')
-  implicit_marker =
-    'GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)'
-  legacy_marker = 'GeneratedPluginRegistrant.register(with: self)'
+implicit_marker =
+  'GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)'
+legacy_marker = 'GeneratedPluginRegistrant.register(with: self)'
 
+unless app_delegate.include?('ReplayKitSpoolBridge.register(') &&
+       app_delegate.include?('ReplayKitLifecycleBridge.register(')
   if app_delegate.include?(implicit_marker)
-    app_delegate = app_delegate.sub(
-      implicit_marker,
-      "#{implicit_marker}\n    ReplayKitSpoolBridge.register(with: engineBridge.pluginRegistry)"
-    )
+    registrations = [
+      'ReplayKitSpoolBridge.register(with: engineBridge.pluginRegistry)',
+      'ReplayKitLifecycleBridge.register(with: engineBridge.pluginRegistry)'
+    ]
+    replacement = ([implicit_marker] + registrations)
+      .map { |line| "    #{line}" }
+      .join("\n")
+      .sub(/^    /, '')
+    app_delegate = app_delegate.sub(implicit_marker, replacement)
   elsif app_delegate.include?(legacy_marker)
-    app_delegate = app_delegate.sub(
-      legacy_marker,
-      "#{legacy_marker}\n    #{registration_line}"
-    )
+    replacement = ([legacy_marker] + legacy_registrations)
+      .map { |line| "    #{line}" }
+      .join("\n")
+      .sub(/^    /, '')
+    app_delegate = app_delegate.sub(legacy_marker, replacement)
   else
     abort('Generated plugin registration marker not found in AppDelegate.swift')
   end
