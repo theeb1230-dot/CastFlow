@@ -43,3 +43,12 @@ Simulator CI builds run with no signing. Device distribution later requires vali
 - `com.castflow.castflow.BroadcastUploadExtension`
 
 Both targets must include the `group.com.castflow.shared` App Group capability. An unsigned build is not evidence of installability on a physical iPhone.
+
+
+## Runner drain into WebRTC
+
+The Runner now registers `ReplayKitSpoolBridge` on the `castflow/replaykit_encoded/events` EventChannel. The bridge incrementally reads complete bounded records from the App Group spool, tolerates partial writes, resets safely after spool truncation, and publishes H.264 packets to Dart.
+
+`IosReplayKitEncodedSource` converts those native events into `EncodedVideoPacket` objects. `EncodedVideoWebRtcSession` accepts that packet stream through `senderPackets`, so the same encrypted WebRTC DataChannel publisher used by Android can carry VideoToolbox output without decoding and re-encoding it.
+
+This completes the encoded-data plumbing boundary for phase #21. It does not by itself prove a physical-device iOS broadcast session or complete sender UI orchestration. Those runtime/lifecycle and UI gates remain required before Beta qualification.
