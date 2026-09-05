@@ -50,7 +50,7 @@ class AndroidMediaProjectionSession {
   }
 
   Future<void> dispose() async {
-    await _channel.setMethodCallHandler(null);
+    _channel.setMethodCallHandler(null);
     await _interruptionController.close();
   }
 
