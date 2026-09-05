@@ -104,8 +104,8 @@ void main() {
     await controller.start();
     encoder.failNextStart = true;
 
-    expect(
-      () => controller.ingest(degradedMetrics()),
+    await expectLater(
+      controller.ingest(degradedMetrics()),
       throwsA(isA<StateError>()),
     );
     expect(controller.appliedProfile, StreamingProfile.high);
