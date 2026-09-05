@@ -151,6 +151,7 @@ class MediaProjectionSessionBridge(
 
         try {
             val projection = projectionManager.getMediaProjection(resultCode, data)
+                ?: throw IllegalStateException("MediaProjectionManager returned no session.")
             projection.registerCallback(projectionCallback, mainHandler)
             mediaProjection = projection
             clearPendingConsent(keepResult = false)
