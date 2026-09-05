@@ -10,11 +10,13 @@ The service uses the `mediaProjection` foreground-service type declared in the m
 
 ## Capture
 
-Flutter obtains the actual display `MediaStream` through `flutter_webrtc`'s `getDisplayMedia()` API.
+For Android 13 and lower, Flutter obtains the display `MediaStream` through `flutter_webrtc`'s `getDisplayMedia()` API while CastFlow runs a media-projection foreground service.
 
-On Android, this is the supported screen-capture path exposed by the WebRTC plugin and integrates with Android's system capture authorization flow.
+Android 14+ changes the required ordering: the user must grant the MediaProjection capture request before the media-projection foreground service is created. The current flutter_webrtc `getDisplayMedia()` flow does not expose a callback between consent and native capture startup, so CastFlow explicitly blocks this legacy path on API 34+ instead of allowing a runtime `SecurityException`.
 
-The stream is validated to contain at least one video track.
+The production Android 14+ path therefore requires CastFlow's own native MediaProjection handoff and capture integration. This is the next capture-layer increment.
+
+On supported API levels, the stream is validated to contain at least one video track.
 
 ## Cleanup
 
@@ -28,4 +30,6 @@ Capture is never started silently. Android's system-level capture approval remai
 
 ## Next
 
-Attach the capture stream to the peer connection and apply the current adaptive bitrate profile to the outbound sender.
+1. Replace the guarded Android 14+ path with a native MediaProjection consent -> foreground-service -> capture handoff.
+2. Keep the existing WebRTC sender tuning layer for bitrate and frame-rate adaptation.
+3. Synchronize capture resolution changes with the active ABR profile.
