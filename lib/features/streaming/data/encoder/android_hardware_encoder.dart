@@ -4,8 +4,9 @@ import 'package:flutter/services.dart';
 
 import '../../domain/entities/encoded_video_packet.dart';
 import '../../domain/entities/streaming_profile.dart';
+import '../../domain/repositories/streaming_encoder_port.dart';
 
-class AndroidHardwareEncoder {
+class AndroidHardwareEncoder implements StreamingEncoderPort {
   AndroidHardwareEncoder({
     MethodChannel methodChannel = const MethodChannel(
       'castflow/hardware_encoder',
@@ -37,6 +38,7 @@ class AndroidHardwareEncoder {
         });
   }
 
+  @override
   Future<void> start(StreamingProfile profile) async {
     if (!Platform.isAndroid) {
       throw UnsupportedError(
@@ -52,6 +54,7 @@ class AndroidHardwareEncoder {
     });
   }
 
+  @override
   Future<void> setBitrate(int bitrateBps) async {
     if (!Platform.isAndroid) {
       return;
@@ -65,6 +68,7 @@ class AndroidHardwareEncoder {
     });
   }
 
+  @override
   Future<void> stop() async {
     if (!Platform.isAndroid) {
       return;
@@ -72,6 +76,7 @@ class AndroidHardwareEncoder {
     await _methodChannel.invokeMethod<void>('stop');
   }
 
+  @override
   Future<bool> isActive() async {
     if (!Platform.isAndroid) {
       return false;
