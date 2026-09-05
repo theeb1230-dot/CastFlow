@@ -47,3 +47,29 @@ jobs:
       - run: flutter test
       - name: Android native compile smoke test
         run: flutter build apk --debug
+
+  ios-replaykit-smoke:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate iOS scaffolding
+        run: flutter create --platforms=ios --org com.castflow .
+      - name: Configure ReplayKit extension target
+        run: |
+          gem install xcodeproj --no-document
+          ruby tools/configure_replaykit.rb
+      - name: Validate ReplayKit project wiring
+        run: |
+          grep -q "BroadcastUploadExtension" ios/Runner.xcodeproj/project.pbxproj
+          grep -q "Embed App Extensions" ios/Runner.xcodeproj/project.pbxproj
+          grep -q "com.apple.broadcast-services-upload" ios/BroadcastUploadExtension/Info.plist
+          grep -q "group.com.castflow.shared" ios/Runner/Runner.entitlements
+          grep -q "group.com.castflow.shared" ios/BroadcastUploadExtension/BroadcastUploadExtension.entitlements
+      - run: flutter pub get
+      - name: Build iOS simulator with ReplayKit extension
+        run: flutter build ios --simulator --debug
+
