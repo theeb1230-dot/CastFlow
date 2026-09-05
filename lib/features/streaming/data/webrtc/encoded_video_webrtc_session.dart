@@ -12,15 +12,20 @@ import 'webrtc_datachannel_video_transport.dart';
 class EncodedVideoWebRtcSession {
   EncodedVideoWebRtcSession({
     required WebRtcOrchestrator orchestrator,
-    required AndroidHardwareEncoder encoder,
-  }) : _orchestrator = orchestrator,
-       _encoder = encoder;
+    AndroidHardwareEncoder? encoder,
+    Stream<EncodedVideoPacket>? senderPackets,
+  }) : assert(
+         encoder != null || senderPackets != null,
+         'Provide either an Android encoder or encoded sender packet stream.',
+       ),
+       _orchestrator = orchestrator,
+       _senderPackets = senderPackets ?? encoder!.packets;
 
   static const String channelLabel = 'castflow-h264';
   static const String channelProtocol = 'castflow-h264-v1';
 
   final WebRtcOrchestrator _orchestrator;
-  final AndroidHardwareEncoder _encoder;
+  final Stream<EncodedVideoPacket> _senderPackets;
 
   final StreamController<EncodedVideoPacket> _remotePacketsController =
       StreamController<EncodedVideoPacket>.broadcast();
@@ -50,7 +55,7 @@ class EncodedVideoWebRtcSession {
     final EncodedVideoPublisher publisher = EncodedVideoPublisher(
       transport: transport,
     );
-    publisher.bind(_encoder.packets);
+    publisher.bind(_senderPackets);
     _publisher = publisher;
   }
 

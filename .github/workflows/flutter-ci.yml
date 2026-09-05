@@ -62,7 +62,7 @@ jobs:
         run: |
           gem install xcodeproj --no-document
           ruby tools/configure_replaykit.rb
-      - name: Validate ReplayKit and VideoToolbox project wiring
+      - name: Validate ReplayKit, VideoToolbox, and Runner bridge wiring
         run: |
           grep -q "BroadcastUploadExtension" ios/Runner.xcodeproj/project.pbxproj
           grep -q "VideoToolboxH264Encoder.swift" ios/Runner.xcodeproj/project.pbxproj
@@ -72,6 +72,9 @@ jobs:
           grep -q "group.com.castflow.shared" ios/BroadcastUploadExtension/BroadcastUploadExtension.entitlements
           grep -q "VTCompressionSessionCreate" ios/BroadcastUploadExtension/VideoToolboxH264Encoder.swift
           grep -q "kVTCompressionPropertyKey_RealTime" ios/BroadcastUploadExtension/VideoToolboxH264Encoder.swift
+          grep -q "ReplayKitSpoolBridge.swift" ios/Runner.xcodeproj/project.pbxproj
+          grep -q "ReplayKitSpoolBridge.register(with:" ios/Runner/AppDelegate.swift
+          grep -q "castflow/replaykit_encoded/events" ios/Runner/ReplayKitSpoolBridge.swift
       - run: flutter pub get
-      - name: Build iOS simulator with ReplayKit and VideoToolbox
+      - name: Build iOS simulator with ReplayKit, VideoToolbox, and Runner bridge
         run: flutter build ios --simulator --debug
