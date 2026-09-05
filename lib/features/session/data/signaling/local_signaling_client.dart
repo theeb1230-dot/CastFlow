@@ -87,10 +87,9 @@ class LocalSignalingClient implements SignalingTransport {
         )
         .timeout(timeout);
 
-    await send(
-      SignalingMessageType.pairingHello,
-      <String, Object?>{'nonce': nonce},
-    );
+    await send(SignalingMessageType.pairingHello, <String, Object?>{
+      'nonce': nonce,
+    });
     await acknowledgement;
   }
 
