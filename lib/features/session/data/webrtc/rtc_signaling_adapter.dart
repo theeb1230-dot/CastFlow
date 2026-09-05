@@ -40,15 +40,10 @@ class RtcSignalingAdapter implements RtcSignalingPort {
   Map<String, Object?> _descriptionToPayload(
     RTCSessionDescription description,
   ) {
-    return <String, Object?>{
-      'sdp': description.sdp,
-      'type': description.type,
-    };
+    return <String, Object?>{'sdp': description.sdp, 'type': description.type};
   }
 
-  RTCSessionDescription _descriptionFromPayload(
-    Map<String, Object?> payload,
-  ) {
+  RTCSessionDescription _descriptionFromPayload(Map<String, Object?> payload) {
     final Object? sdp = payload['sdp'];
     final Object? type = payload['type'];
 
@@ -82,10 +77,6 @@ class RtcSignalingAdapter implements RtcSignalingPort {
       throw const FormatException('Invalid WebRTC ICE m-line index.');
     }
 
-    return RTCIceCandidate(
-      candidate,
-      sdpMid as String?,
-      sdpMLineIndex as int?,
-    );
+    return RTCIceCandidate(candidate, sdpMid as String?, sdpMLineIndex as int?);
   }
 }
