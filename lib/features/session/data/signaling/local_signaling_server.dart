@@ -100,6 +100,28 @@ class LocalSignalingServer implements SignalingTransport {
             try {
               final SignalingMessage message = _codec.decode(line);
               _validateEnvelope(message);
+
+              if (message.type == SignalingMessageType.pairingHello) {
+                final Object? nonce = message.payload['nonce'];
+                if (nonce is! String ||
+                    nonce.length < 16 ||
+                    nonce.length > 128) {
+                  throw const FormatException(
+                    'Invalid CastFlow pairing challenge.',
+                  );
+                }
+
+                final SignalingMessage acknowledgement = SignalingMessage(
+                  type: SignalingMessageType.pairingAck,
+                  sessionId: sessionId,
+                  token: token,
+                  payload: <String, Object?>{'nonce': nonce},
+                );
+                socket.write('${_codec.encode(acknowledgement)}\n');
+                unawaited(socket.flush());
+                return;
+              }
+
               if (!_messagesController.isClosed) {
                 _messagesController.add(message);
               }
