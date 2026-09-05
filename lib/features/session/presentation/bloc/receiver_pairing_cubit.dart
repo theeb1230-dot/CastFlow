@@ -58,7 +58,9 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
       return;
     }
 
-    emit(state.copyWith(status: ReceiverPairingStatus.starting, clearError: true));
+    emit(
+      state.copyWith(status: ReceiverPairingStatus.starting, clearError: true),
+    );
 
     try {
       final String host = await _resolveLanIpv4();
@@ -74,7 +76,10 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
       _server = server;
 
       final int expiresAt =
-          DateTime.now().toUtc().add(const Duration(minutes: 5)).millisecondsSinceEpoch ~/
+          DateTime.now()
+              .toUtc()
+              .add(const Duration(minutes: 5))
+              .millisecondsSinceEpoch ~/
           1000;
 
       final HandshakePayload payload = HandshakePayload(
