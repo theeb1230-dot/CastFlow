@@ -67,4 +67,12 @@ unless embed_phase.files_references.include?(product_ref)
   embed_phase.add_file_reference(product_ref, true)
 end
 
+thin_binary_index = runner.build_phases.index do |phase|
+  phase.respond_to?(:name) && phase.name == 'Thin Binary'
+end
+if thin_binary_index
+  runner.build_phases.delete(embed_phase)
+  runner.build_phases.insert(thin_binary_index, embed_phase)
+end
+
 project.save
