@@ -34,10 +34,10 @@ class ReplayKitLifecycleEventDecoder {
     final dynamic heartbeat = event['lastHeartbeat'];
     final dynamic videoSamples = event['videoSamples'];
 
-    if (rawState is! String ||
-        heartbeat is! num ||
-        videoSamples is! int) {
-      throw const FormatException('ReplayKit lifecycle event fields are invalid.');
+    if (rawState is! String || heartbeat is! num || videoSamples is! int) {
+      throw const FormatException(
+        'ReplayKit lifecycle event fields are invalid.',
+      );
     }
 
     return ReplayKitLifecycleSnapshot(
