@@ -42,17 +42,15 @@ void main() {
     expect(service.started, isTrue);
     expect(cubit.state.status, DiscoveryStatus.scanning);
 
-    service.controller.add(
-      const <CastPeer>[
-        CastPeer(
-          id: 'tv-1',
-          name: 'Living Room TV',
-          host: '192.168.1.30',
-          port: 45670,
-          platform: CastPeerPlatform.androidTv,
-        ),
-      ],
-    );
+    service.controller.add(const <CastPeer>[
+      CastPeer(
+        id: 'tv-1',
+        name: 'Living Room TV',
+        host: '192.168.1.30',
+        port: 45670,
+        platform: CastPeerPlatform.androidTv,
+      ),
+    ]);
     await Future<void>.delayed(Duration.zero);
 
     expect(cubit.state.peers, hasLength(1));
