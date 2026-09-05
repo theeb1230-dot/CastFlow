@@ -37,6 +37,7 @@ class LocalSignalingClient {
     _socket = socket;
 
     _subscription = socket
+        .cast<List<int>>()
         .transform(utf8.decoder)
         .transform(const LineSplitter())
         .listen(
