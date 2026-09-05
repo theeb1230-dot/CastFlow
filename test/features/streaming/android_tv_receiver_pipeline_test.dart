@@ -78,18 +78,10 @@ void main() {
     final StreamController<EncodedVideoPacket> packets =
         StreamController<EncodedVideoPacket>();
 
-    await pipeline.start(
-      packets: packets.stream,
-      width: 1920,
-      height: 1080,
-    );
+    await pipeline.start(packets: packets.stream, width: 1920, height: 1080);
 
     await expectLater(
-      pipeline.start(
-        packets: packets.stream,
-        width: 1920,
-        height: 1080,
-      ),
+      pipeline.start(packets: packets.stream, width: 1920, height: 1080),
       throwsStateError,
     );
 
