@@ -5,10 +5,15 @@ import io.flutter.embedding.engine.FlutterEngine
 
 class MainActivity : FlutterActivity() {
     private lateinit var wifiDirectBridge: WifiDirectBridge
+    private lateinit var screenCaptureBridge: ScreenCaptureBridge
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         wifiDirectBridge = WifiDirectBridge(
+            activity = this,
+            messenger = flutterEngine.dartExecutor.binaryMessenger,
+        )
+        screenCaptureBridge = ScreenCaptureBridge(
             activity = this,
             messenger = flutterEngine.dartExecutor.binaryMessenger,
         )
