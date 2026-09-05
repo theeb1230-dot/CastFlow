@@ -44,9 +44,7 @@ class _FakeRtc implements RtcSignalingPort {
   }
 
   @override
-  Future<Map<String, Object?>> acceptOffer(
-    Map<String, Object?> payload,
-  ) async {
+  Future<Map<String, Object?>> acceptOffer(Map<String, Object?> payload) async {
     acceptedOffer = payload;
     return <String, Object?>{'sdp': 'answer-sdp', 'type': 'answer'};
   }
@@ -123,9 +121,9 @@ void main() {
 
     await bridge.start();
 
-    rtc.iceController.add(
-      const <String, Object?>{'candidate': 'local-candidate'},
-    );
+    rtc.iceController.add(const <String, Object?>{
+      'candidate': 'local-candidate',
+    });
     transport.controller.add(
       const SignalingMessage(
         type: SignalingMessageType.iceCandidate,
