@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:async';
 
 import 'package:castflow/features/streaming/data/decoder/android_tv_receiver_pipeline.dart';
@@ -36,7 +37,7 @@ class _FakeRenderer implements EncodedVideoRendererPort {
 
 EncodedVideoPacket packet(int timestamp) {
   return EncodedVideoPacket(
-    data: <int>[0, 0, 0, 1, 0x65, timestamp & 0xff],
+    data: Uint8List.fromList(<int>[0, 0, 0, 1, 0x65, timestamp & 0xff]),
     presentationTimeUs: timestamp,
     flags: 0,
   );
