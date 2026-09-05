@@ -34,9 +34,7 @@ class WebRtcDataChannelVideoTransport implements BinaryVideoTransport {
 
   @override
   Future<void> send(Uint8List bytes) async {
-    if (_channel.state != RTCDataChannelState.RTCDataChannelOpen) {
-      throw StateError('Encoded video DataChannel is not open.');
-    }
+    await _waitUntilOpen();
 
     final DateTime deadline = DateTime.now().add(backpressureTimeout);
     while (await _channel.getBufferedAmount() > highWaterMarkBytes) {
@@ -50,6 +48,30 @@ class WebRtcDataChannelVideoTransport implements BinaryVideoTransport {
     }
 
     await _channel.send(RTCDataChannelMessage.fromBinary(bytes));
+  }
+
+  Future<void> _waitUntilOpen() async {
+    if (_channel.state == RTCDataChannelState.RTCDataChannelOpen) {
+      return;
+    }
+
+    if (_channel.state == RTCDataChannelState.RTCDataChannelClosed ||
+        _channel.state == RTCDataChannelState.RTCDataChannelClosing) {
+      throw StateError('Encoded video DataChannel is closed.');
+    }
+
+    final RTCDataChannelState state = await _channel.stateChangeStream
+        .firstWhere(
+          (RTCDataChannelState value) =>
+              value == RTCDataChannelState.RTCDataChannelOpen ||
+              value == RTCDataChannelState.RTCDataChannelClosed ||
+              value == RTCDataChannelState.RTCDataChannelClosing,
+        )
+        .timeout(backpressureTimeout);
+
+    if (state != RTCDataChannelState.RTCDataChannelOpen) {
+      throw StateError('Encoded video DataChannel closed before opening.');
+    }
   }
 
   @override
