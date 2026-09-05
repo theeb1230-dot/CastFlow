@@ -24,10 +24,9 @@ void main() {
 
     final Future<SignalingMessage> received = server.messages.first;
 
-    await client.send(
-      SignalingMessageType.offer,
-      const <String, Object?>{'sdp': 'v=0'},
-    );
+    await client.send(SignalingMessageType.offer, const <String, Object?>{
+      'sdp': 'v=0',
+    });
 
     final SignalingMessage message = await received.timeout(
       const Duration(seconds: 2),
