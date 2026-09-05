@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../session/data/discovery/local_discovery_service.dart';
 import '../bloc/discovery_cubit.dart';
+import '../bloc/discovery_state.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -10,7 +12,7 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<DiscoveryCubit>(
-      create: (_) => DiscoveryCubit(),
+      create: (_) => DiscoveryCubit(LocalDiscoveryService()),
       child: const _DashboardView(),
     );
   }
@@ -42,8 +44,8 @@ class _DashboardViewState extends State<_DashboardView>
     super.dispose();
   }
 
-  void _syncAnimation(DiscoveryStatus status) {
-    if (status == DiscoveryStatus.scanning) {
+  void _syncAnimation(DiscoveryState state) {
+    if (state.status == DiscoveryStatus.scanning) {
       _radarController.repeat();
     } else {
       _radarController.reset();
@@ -52,8 +54,8 @@ class _DashboardViewState extends State<_DashboardView>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<DiscoveryCubit, DiscoveryStatus>(
-      listener: (_, status) => _syncAnimation(status),
+    return BlocListener<DiscoveryCubit, DiscoveryState>(
+      listener: (_, state) => _syncAnimation(state),
       child: Scaffold(
         appBar: AppBar(
           title: const Row(
@@ -97,9 +99,10 @@ class _DashboardViewState extends State<_DashboardView>
               const SizedBox(height: 36),
               Expanded(
                 child: Center(
-                  child: BlocBuilder<DiscoveryCubit, DiscoveryStatus>(
-                    builder: (context, status) {
-                      final bool scanning = status == DiscoveryStatus.scanning;
+                  child: BlocBuilder<DiscoveryCubit, DiscoveryState>(
+                    builder: (context, state) {
+                      final bool scanning =
+                          state.status == DiscoveryStatus.scanning;
                       return GestureDetector(
                         onTap: context.read<DiscoveryCubit>().toggle,
                         child: Stack(
@@ -150,6 +153,31 @@ class _DashboardViewState extends State<_DashboardView>
                     },
                   ),
                 ),
+              ),
+              BlocBuilder<DiscoveryCubit, DiscoveryState>(
+                buildWhen: (previous, current) =>
+                    previous.peers != current.peers ||
+                    previous.status != current.status,
+                builder: (context, state) {
+                  final int count = state.peers.length;
+                  final String label = state.status == DiscoveryStatus.failure
+                      ? 'تعذر البحث عن الأجهزة'
+                      : count == 0
+                      ? 'لا توجد أجهزة مكتشفة بعد'
+                      : 'الأجهزة المكتشفة: $count';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: state.status == DiscoveryStatus.failure
+                            ? Colors.redAccent
+                            : Colors.grey.shade400,
+                      ),
+                    ),
+                  );
+                },
               ),
               Row(
                 children: <Widget>[
