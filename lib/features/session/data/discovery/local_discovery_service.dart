@@ -5,8 +5,9 @@ import 'dart:typed_data';
 import 'package:nsd/nsd.dart' as nsd;
 
 import '../../domain/entities/cast_peer.dart';
+import '../../domain/repositories/peer_discovery_service.dart';
 
-class LocalDiscoveryService {
+class LocalDiscoveryService implements PeerDiscoveryService {
   static const String serviceType = '_castflow._tcp';
 
   nsd.Discovery? _discovery;
@@ -16,8 +17,10 @@ class LocalDiscoveryService {
       StreamController<List<CastPeer>>.broadcast();
   final Map<String, CastPeer> _peers = <String, CastPeer>{};
 
+  @override
   Stream<List<CastPeer>> get peers => _peersController.stream;
 
+  @override
   Future<void> startDiscovery() async {
     if (_discovery != null) {
       return;
@@ -31,6 +34,7 @@ class LocalDiscoveryService {
     _discovery = discovery;
   }
 
+  @override
   Future<void> stopDiscovery() async {
     final nsd.Discovery? discovery = _discovery;
     if (discovery == null) {
@@ -71,6 +75,7 @@ class LocalDiscoveryService {
     _registration = null;
   }
 
+  @override
   Future<void> dispose() async {
     await stopDiscovery();
     await stopAdvertising();
