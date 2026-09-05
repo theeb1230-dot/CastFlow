@@ -45,7 +45,6 @@ void main() {
     );
   });
 
-
   test('rejects public and hostname pairing targets', () {
     final String publicIp = codec.encode(
       HandshakePayload(
