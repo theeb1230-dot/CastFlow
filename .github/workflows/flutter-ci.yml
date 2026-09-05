@@ -49,6 +49,10 @@ jobs:
           git diff --exit-code -- lib test
       - run: flutter analyze
       - run: flutter test
+      - name: Stress, reconnect, and resource-bound gates
+        run: flutter test test/stress --reporter expanded
+      - name: Performance regression gate
+        run: flutter test test/performance --reporter expanded
       - name: Android native compile smoke test
         run: flutter build apk --debug
 
