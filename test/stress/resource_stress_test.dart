@@ -64,75 +64,81 @@ void main() {
     expect(reassembler.pendingPacketCount, 0);
   });
 
-  test('recovery attempts do not accumulate across 1000 recovered sessions', () async {
-    final _StressRecoveryPort port = _StressRecoveryPort();
-    final SessionRecoveryController controller = SessionRecoveryController(
-      port: port,
-      maxAttempts: 3,
-      sleeper: (_) async {},
-    );
+  test(
+    'recovery attempts do not accumulate across 1000 recovered sessions',
+    () async {
+      final _StressRecoveryPort port = _StressRecoveryPort();
+      final SessionRecoveryController controller = SessionRecoveryController(
+        port: port,
+        maxAttempts: 3,
+        sleeper: (_) async {},
+      );
 
-    for (int cycle = 0; cycle < 1000; cycle++) {
-      final SessionRecoveryState state = await controller.onTransportLost();
-      expect(state, SessionRecoveryState.recovering);
-      controller.onTransportRecovered();
-      expect(controller.state, SessionRecoveryState.connected);
-      expect(controller.attempts, 0);
-    }
-
-    expect(port.restartCalls, 1000);
-  });
-
-  test('authenticated signaling sockets are released across reconnect cycles', () async {
-    final LocalSignalingServer server = LocalSignalingServer(
-      sessionId: 'stress-session',
-      token: 'stress-token',
-      address: InternetAddress.loopbackIPv4,
-      maxClients: 4,
-    );
-    await server.start();
-
-    try {
-      for (int cycle = 0; cycle < 50; cycle++) {
-        final LocalSignalingClient client = LocalSignalingClient(
-          host: InternetAddress.loopbackIPv4.address,
-          port: server.boundPort,
-          sessionId: 'stress-session',
-          token: 'stress-token',
-        );
-
-        await client.connectAuthenticated();
-
-        expect(server.connectedClientCount, 1);
-        expect(server.authenticatedClientCount, 1);
-
-        final Future<SignalingMessage> received = server.messages
-            .firstWhere(
-              (SignalingMessage message) =>
-                  message.type == SignalingMessageType.offer &&
-                  message.payload['cycle'] == cycle,
-            )
-            .timeout(const Duration(seconds: 2));
-
-        await client.send(SignalingMessageType.offer, <String, Object?>{
-          'cycle': cycle,
-        });
-        await received;
-        await client.dispose();
-
-        await _waitUntil(
-          () =>
-              server.connectedClientCount == 0 &&
-              server.authenticatedClientCount == 0,
-        );
+      for (int cycle = 0; cycle < 1000; cycle++) {
+        final SessionRecoveryState state = await controller.onTransportLost();
+        expect(state, SessionRecoveryState.recovering);
+        controller.onTransportRecovered();
+        expect(controller.state, SessionRecoveryState.connected);
+        expect(controller.attempts, 0);
       }
 
-      expect(server.connectedClientCount, 0);
-      expect(server.authenticatedClientCount, 0);
-    } finally {
-      await server.dispose();
-    }
-  });
+      expect(port.restartCalls, 1000);
+    },
+  );
+
+  test(
+    'authenticated signaling sockets are released across reconnect cycles',
+    () async {
+      final LocalSignalingServer server = LocalSignalingServer(
+        sessionId: 'stress-session',
+        token: 'stress-token',
+        address: InternetAddress.loopbackIPv4,
+        maxClients: 4,
+      );
+      await server.start();
+
+      try {
+        for (int cycle = 0; cycle < 50; cycle++) {
+          final LocalSignalingClient client = LocalSignalingClient(
+            host: InternetAddress.loopbackIPv4.address,
+            port: server.boundPort,
+            sessionId: 'stress-session',
+            token: 'stress-token',
+          );
+
+          await client.connectAuthenticated();
+
+          expect(server.connectedClientCount, 1);
+          expect(server.authenticatedClientCount, 1);
+
+          final Future<SignalingMessage> received = server.messages
+              .firstWhere(
+                (SignalingMessage message) =>
+                    message.type == SignalingMessageType.offer &&
+                    message.payload['cycle'] == cycle,
+              )
+              .timeout(const Duration(seconds: 2));
+
+          await client.send(SignalingMessageType.offer, <String, Object?>{
+            'cycle': cycle,
+          });
+          await received;
+          await client.dispose();
+
+          await _waitUntil(
+            () =>
+                server.connectedClientCount == 0 &&
+                server.authenticatedClientCount == 0,
+          );
+        }
+
+        expect(server.connectedClientCount, 0);
+        expect(server.authenticatedClientCount, 0);
+      } finally {
+        await server.dispose();
+      }
+    },
+  );
 
   test('signaling server enforces its concurrent client bound', () async {
     final LocalSignalingServer server = LocalSignalingServer(
@@ -147,10 +153,7 @@ void main() {
     try {
       for (int index = 0; index < 12; index++) {
         sockets.add(
-          await Socket.connect(
-            InternetAddress.loopbackIPv4,
-            server.boundPort,
-          ),
+          await Socket.connect(InternetAddress.loopbackIPv4, server.boundPort),
         );
       }
 
