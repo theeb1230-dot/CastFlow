@@ -19,11 +19,14 @@ class WebRtcOrchestrator {
       StreamController<RTCIceCandidate>.broadcast();
   final StreamController<RTCPeerConnectionState> _connectionStateController =
       StreamController<RTCPeerConnectionState>.broadcast();
+  final StreamController<RTCDataChannel> _dataChannelController =
+      StreamController<RTCDataChannel>.broadcast();
 
   Stream<RTCIceCandidate> get localCandidates =>
       _localCandidatesController.stream;
   Stream<RTCPeerConnectionState> get connectionStates =>
       _connectionStateController.stream;
+  Stream<RTCDataChannel> get dataChannels => _dataChannelController.stream;
 
   Future<void> initialize() async {
     if (_peerConnection != null) {
@@ -50,6 +53,9 @@ class WebRtcOrchestrator {
     };
     peerConnection.onConnectionState = (RTCPeerConnectionState state) {
       _connectionStateController.add(state);
+    };
+    peerConnection.onDataChannel = (RTCDataChannel channel) {
+      _dataChannelController.add(channel);
     };
 
     _peerConnection = peerConnection;
@@ -89,6 +95,19 @@ class WebRtcOrchestrator {
     return _requirePeerConnection().restartIce();
   }
 
+  Future<RTCDataChannel> createDataChannel({
+    required String label,
+    required bool ordered,
+    required int maxRetransmits,
+    required String protocol,
+  }) {
+    final RTCDataChannelInit init = RTCDataChannelInit()
+      ..ordered = ordered
+      ..maxRetransmits = maxRetransmits
+      ..protocol = protocol;
+    return _requirePeerConnection().createDataChannel(label, init);
+  }
+
   Future<List<RTCRtpSender>> attachLocalStream(MediaStream stream) async {
     final RTCPeerConnection peerConnection = _requirePeerConnection();
     final List<RTCRtpSender> senders = <RTCRtpSender>[];
@@ -126,6 +145,7 @@ class WebRtcOrchestrator {
     }
     await _localCandidatesController.close();
     await _connectionStateController.close();
+    await _dataChannelController.close();
   }
 
   RTCPeerConnection _requirePeerConnection() {
