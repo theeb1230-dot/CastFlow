@@ -30,7 +30,8 @@ class EncodedVideoWebRtcSession {
   EncodedVideoPublisher? _publisher;
   EncodedVideoSubscriber? _subscriber;
 
-  Stream<EncodedVideoPacket> get remotePackets => _remotePacketsController.stream;
+  Stream<EncodedVideoPacket> get remotePackets =>
+      _remotePacketsController.stream;
 
   Future<void> startSender() async {
     if (_publisher != null) {
