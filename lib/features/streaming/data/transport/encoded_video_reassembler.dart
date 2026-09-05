@@ -19,6 +19,8 @@ class EncodedVideoReassembler {
   final LinkedHashMap<int, _PendingPacket> _pending =
       LinkedHashMap<int, _PendingPacket>();
 
+  int get pendingPacketCount => _pending.length;
+
   EncodedVideoPacket? add(EncodedVideoChunk chunk) {
     final _PendingPacket pending = _pending.putIfAbsent(chunk.sequence, () {
       _evictOldestIfNeeded();
