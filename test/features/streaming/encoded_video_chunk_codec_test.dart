@@ -23,7 +23,8 @@ void main() {
     EncodedVideoPacket? completed;
 
     for (final chunk in chunks.reversed) {
-      completed = reassembler.add(codec.decode(codec.encode(chunk))) ?? completed;
+      completed =
+          reassembler.add(codec.decode(codec.encode(chunk))) ?? completed;
     }
 
     expect(completed, isNotNull);
