@@ -16,8 +16,13 @@ group = project.main_group.find_subpath(extension_name, true)
 group.set_source_tree('<group>')
 group.path = extension_name
 
-sample_path = 'SampleHandler.swift'
-sample_ref = group.files.find { |file| file.path == sample_path } || group.new_file(sample_path)
+source_paths = %w[
+  SampleHandler.swift
+  VideoToolboxH264Encoder.swift
+]
+source_refs = source_paths.map do |source_path|
+  group.files.find { |file| file.path == source_path } || group.new_file(source_path)
+end
 
 unless extension_target
   extension_target = project.new_target(
@@ -28,8 +33,10 @@ unless extension_target
   )
 end
 
-unless extension_target.source_build_phase.files_references.include?(sample_ref)
-  extension_target.add_file_references([sample_ref])
+source_refs.each do |source_ref|
+  unless extension_target.source_build_phase.files_references.include?(source_ref)
+    extension_target.add_file_references([source_ref])
+  end
 end
 
 extension_target.build_configurations.each do |config|

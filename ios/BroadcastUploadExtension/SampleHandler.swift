@@ -5,9 +5,13 @@ final class SampleHandler: RPBroadcastSampleHandler {
     private let heartbeatKey = "replaykit.lastHeartbeat"
     private let stateKey = "replaykit.state"
     private var processedVideoSamples = 0
+    private var encoder: VideoToolboxH264Encoder?
+    private var spool: ReplayKitEncodedFrameSpool?
 
     override func broadcastStarted(withSetupInfo setupInfo: [String : NSObject]?) {
         processedVideoSamples = 0
+        spool = try? ReplayKitEncodedFrameSpool(appGroup: appGroup)
+        spool?.reset()
         updateSharedState("started")
         writeHeartbeat()
     }
@@ -23,6 +27,8 @@ final class SampleHandler: RPBroadcastSampleHandler {
     }
 
     override func broadcastFinished() {
+        encoder?.finish()
+        encoder = nil
         updateSharedState("finished")
         writeHeartbeat()
     }
@@ -37,14 +43,35 @@ final class SampleHandler: RPBroadcastSampleHandler {
 
         switch sampleBufferType {
         case .video:
-            processedVideoSamples += 1
-            if processedVideoSamples % 30 == 0 {
-                writeHeartbeat()
+            do {
+                try ensureEncoder(for: sampleBuffer)
+                encoder?.encode(sampleBuffer)
+                processedVideoSamples += 1
+                if processedVideoSamples % 30 == 0 {
+                    writeHeartbeat()
+                }
+            } catch {
+                updateSharedState("encoder-error")
+                finishBroadcastWithError(error)
             }
         case .audioApp, .audioMic:
             break
         @unknown default:
             break
+        }
+    }
+
+    private func ensureEncoder(for sampleBuffer: CMSampleBuffer) throws {
+        guard encoder == nil else { return }
+        guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+            throw NSError(domain: "CastFlow.ReplayKit", code: 2)
+        }
+
+        let width = Int32(CVPixelBufferGetWidth(imageBuffer))
+        let height = Int32(CVPixelBufferGetHeight(imageBuffer))
+        let frameSpool = spool
+        encoder = try VideoToolboxH264Encoder(width: width, height: height) { frame in
+            frameSpool?.append(frame)
         }
     }
 
