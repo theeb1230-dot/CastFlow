@@ -27,6 +27,7 @@ class LocalSignalingServer implements SignalingTransport {
       StreamController<SignalingMessage>.broadcast();
 
   final Set<Socket> _clients = <Socket>{};
+  final Set<Socket> _authenticatedClients = <Socket>{};
   ServerSocket? _server;
 
   @override
@@ -63,7 +64,7 @@ class LocalSignalingServer implements SignalingTransport {
     );
 
     final List<int> bytes = utf8.encode('${_codec.encode(message)}\n');
-    for (final Socket socket in _clients.toList(growable: false)) {
+    for (final Socket socket in _authenticatedClients.toList(growable: false)) {
       socket.add(bytes);
       await socket.flush();
     }
@@ -77,6 +78,7 @@ class LocalSignalingServer implements SignalingTransport {
       await socket.close();
     }
     _clients.clear();
+    _authenticatedClients.clear();
 
     if (server != null) {
       await server.close();
@@ -100,6 +102,35 @@ class LocalSignalingServer implements SignalingTransport {
             try {
               final SignalingMessage message = _codec.decode(line);
               _validateEnvelope(message);
+
+              if (message.type == SignalingMessageType.pairingHello) {
+                final Object? nonce = message.payload['nonce'];
+                if (nonce is! String ||
+                    nonce.length < 16 ||
+                    nonce.length > 128) {
+                  throw const FormatException(
+                    'Invalid CastFlow pairing challenge.',
+                  );
+                }
+
+                final SignalingMessage acknowledgement = SignalingMessage(
+                  type: SignalingMessageType.pairingAck,
+                  sessionId: sessionId,
+                  token: token,
+                  payload: <String, Object?>{'nonce': nonce},
+                );
+                _authenticatedClients.add(socket);
+                socket.write('${_codec.encode(acknowledgement)}\n');
+                unawaited(socket.flush());
+                return;
+              }
+
+              if (!_authenticatedClients.contains(socket)) {
+                throw const FormatException(
+                  'CastFlow signaling client is not authenticated.',
+                );
+              }
+
               if (!_messagesController.isClosed) {
                 _messagesController.add(message);
               }
@@ -107,12 +138,17 @@ class LocalSignalingServer implements SignalingTransport {
               if (!_messagesController.isClosed) {
                 _messagesController.addError(error, stackTrace);
               }
+              _authenticatedClients.remove(socket);
               socket.destroy();
             }
           },
-          onDone: () => _clients.remove(socket),
+          onDone: () {
+            _clients.remove(socket);
+            _authenticatedClients.remove(socket);
+          },
           onError: (_, _) {
             _clients.remove(socket);
+            _authenticatedClients.remove(socket);
             socket.destroy();
           },
           cancelOnError: true,

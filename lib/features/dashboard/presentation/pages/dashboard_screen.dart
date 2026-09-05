@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../session/data/discovery/local_discovery_service.dart';
+import '../../../session/presentation/pages/receiver_pairing_screen.dart';
+import '../../../session/presentation/pages/sender_pairing_screen.dart';
 import '../bloc/discovery_cubit.dart';
 import '../bloc/discovery_state.dart';
 
@@ -74,7 +76,13 @@ class _DashboardViewState extends State<_DashboardView>
           actions: <Widget>[
             IconButton(
               tooltip: 'QR pairing',
-              onPressed: () {},
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SenderPairingScreen(),
+                  ),
+                );
+              },
               icon: const Icon(
                 Icons.qr_code_scanner,
                 color: AppTheme.primaryCyan,
@@ -186,7 +194,13 @@ class _DashboardViewState extends State<_DashboardView>
                       title: 'إرسال الشاشة',
                       subtitle: 'Sender Mode',
                       icon: Icons.screen_share_rounded,
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const SenderPairingScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -195,7 +209,13 @@ class _DashboardViewState extends State<_DashboardView>
                       title: 'استقبال العرض',
                       subtitle: 'Receiver Mode',
                       icon: Icons.tv_rounded,
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const ReceiverPairingScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],

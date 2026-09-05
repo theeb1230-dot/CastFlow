@@ -1,6 +1,13 @@
 import 'package:equatable/equatable.dart';
 
-enum SignalingMessageType { offer, answer, iceCandidate, bye }
+enum SignalingMessageType {
+  pairingHello,
+  pairingAck,
+  offer,
+  answer,
+  iceCandidate,
+  bye,
+}
 
 class SignalingMessage extends Equatable {
   const SignalingMessage({
