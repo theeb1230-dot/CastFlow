@@ -53,14 +53,14 @@ class _SenderPairingScreenState extends State<SenderPairingScreen> {
                             return;
                           }
 
-                          final String? value = capture.barcodes
-                              .map((Barcode barcode) => barcode.rawValue)
-                              .whereType<String>()
-                              .cast<String?>()
-                              .firstWhere(
-                                (String? item) => item != null && item.isNotEmpty,
-                                orElse: () => null,
-                              );
+                          String? value;
+                          for (final Barcode barcode in capture.barcodes) {
+                            final String? rawValue = barcode.rawValue;
+                            if (rawValue != null && rawValue.isNotEmpty) {
+                              value = rawValue;
+                              break;
+                            }
+                          }
 
                           if (value == null) {
                             return;
