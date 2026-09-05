@@ -37,6 +37,7 @@ class MediaProjectionSessionBridge(
         override fun onStop() {
             mediaProjection = null
             stopForegroundService()
+            methodChannel.invokeMethod("onProjectionStopped", null)
         }
     }
 

@@ -28,6 +28,7 @@ jobs:
           grep -q "castflow/wifi_direct" android/app/src/main/kotlin/com/castflow/castflow/WifiDirectBridge.kt
           grep -q "castflow/screen_capture" android/app/src/main/kotlin/com/castflow/castflow/ScreenCaptureBridge.kt
           grep -q "castflow/media_projection" android/app/src/main/kotlin/com/castflow/castflow/MediaProjectionSessionBridge.kt
+          grep -q "onProjectionStopped" android/app/src/main/kotlin/com/castflow/castflow/MediaProjectionSessionBridge.kt
           grep -q "castflow/hardware_encoder" android/app/src/main/kotlin/com/castflow/castflow/HardwareEncoderBridge.kt
           grep -q "createVirtualDisplay" android/app/src/main/kotlin/com/castflow/castflow/HardwareEncoderBridge.kt
           grep -q "PARAMETER_KEY_VIDEO_BITRATE" android/app/src/main/kotlin/com/castflow/castflow/HardwareEncoderBridge.kt
