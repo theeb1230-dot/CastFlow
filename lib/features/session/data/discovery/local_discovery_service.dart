@@ -2,15 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:nsd/nsd.dart';
+import 'package:nsd/nsd.dart' as nsd;
 
 import '../../domain/entities/cast_peer.dart';
 
 class LocalDiscoveryService {
   static const String serviceType = '_castflow._tcp';
 
-  Discovery? _discovery;
-  Registration? _registration;
+  nsd.Discovery? _discovery;
+  nsd.Registration? _registration;
 
   final StreamController<List<CastPeer>> _peersController =
       StreamController<List<CastPeer>>.broadcast();
@@ -23,20 +23,20 @@ class LocalDiscoveryService {
       return;
     }
 
-    final Discovery discovery = await startDiscovery(
+    final nsd.Discovery discovery = await nsd.startDiscovery(
       serviceType,
-      ipLookupType: IpLookupType.any,
+      ipLookupType: nsd.IpLookupType.any,
     );
     discovery.addServiceListener(_handleService);
     _discovery = discovery;
   }
 
   Future<void> stopDiscovery() async {
-    final Discovery? discovery = _discovery;
+    final nsd.Discovery? discovery = _discovery;
     if (discovery == null) {
       return;
     }
-    await stopDiscovery(discovery);
+    await nsd.stopDiscovery(discovery);
     _discovery = null;
     _peers.clear();
     _emitPeers();
@@ -57,8 +57,8 @@ class LocalDiscoveryService {
       'platform': Uint8List.fromList(utf8.encode(platform.name)),
     };
 
-    _registration = await register(
-      Service(
+    _registration = await nsd.register(
+      nsd.Service(
         name: name,
         type: serviceType,
         port: port,
@@ -68,11 +68,11 @@ class LocalDiscoveryService {
   }
 
   Future<void> stopAdvertising() async {
-    final Registration? registration = _registration;
+    final nsd.Registration? registration = _registration;
     if (registration == null) {
       return;
     }
-    await unregister(registration);
+    await nsd.unregister(registration);
     _registration = null;
   }
 
@@ -82,7 +82,7 @@ class LocalDiscoveryService {
     await _peersController.close();
   }
 
-  void _handleService(Service service, ServiceStatus status) {
+  void _handleService(nsd.Service service, nsd.ServiceStatus status) {
     final String? host = service.host;
     final int? port = service.port;
     final String name = service.name ?? 'CastFlow';
@@ -99,7 +99,7 @@ class LocalDiscoveryService {
     });
 
     final String peerId = txt['peerId'] ?? '$host:$port';
-    if (status == ServiceStatus.lost) {
+    if (status == nsd.ServiceStatus.lost) {
       _peers.remove(peerId);
       _emitPeers();
       return;
