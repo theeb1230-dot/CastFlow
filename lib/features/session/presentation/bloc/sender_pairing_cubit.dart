@@ -45,7 +45,13 @@ class SenderPairingCubit extends Cubit<SenderPairingState> {
         sessionId: payload.sessionId,
         token: payload.token,
       );
-      await client.connectAuthenticated();
+      try {
+        await client.connectAuthenticated();
+      } catch (_) {
+        await client.dispose();
+        rethrow;
+      }
+
       await _client?.dispose();
       _client = client;
 
