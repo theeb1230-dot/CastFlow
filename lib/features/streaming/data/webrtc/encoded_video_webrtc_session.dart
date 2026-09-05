@@ -56,11 +56,7 @@ class EncodedVideoWebRtcSession {
 
   void startReceiver() {
     _remoteChannelSubscription ??= _orchestrator.dataChannels
-        .where(
-          (RTCDataChannel channel) =>
-              channel.label == channelLabel &&
-              channel.protocol == channelProtocol,
-        )
+        .where((RTCDataChannel channel) => channel.label == channelLabel)
         .listen(_attachRemoteChannel);
   }
 
