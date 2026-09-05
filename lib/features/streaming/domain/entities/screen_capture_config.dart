@@ -3,10 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'streaming_profile.dart';
 
 class ScreenCaptureConfig extends Equatable {
-  const ScreenCaptureConfig({
-    required this.profile,
-    this.includeAudio = false,
-  });
+  const ScreenCaptureConfig({required this.profile, this.includeAudio = false});
 
   final StreamingProfile profile;
   final bool includeAudio;
