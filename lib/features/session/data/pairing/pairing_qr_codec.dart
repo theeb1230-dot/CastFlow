@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import '../../domain/entities/handshake_payload.dart';
 
@@ -61,6 +62,7 @@ class PairingQrCodec {
         payload.peerName.length > 128 ||
         payload.host.isEmpty ||
         payload.host.length > 255 ||
+        !_isAllowedLocalIpv4(payload.host) ||
         payload.port < 1 ||
         payload.port > 65535 ||
         payload.token.length < 24 ||
@@ -77,5 +79,27 @@ class PairingQrCodec {
     }
 
     return payload;
+  }
+
+  bool _isAllowedLocalIpv4(String host) {
+    final InternetAddress? address = InternetAddress.tryParse(host);
+    if (address == null || address.type != InternetAddressType.IPv4) {
+      return false;
+    }
+
+    final List<int> octets = address.rawAddress;
+    if (octets.length != 4) {
+      return false;
+    }
+
+    final int first = octets[0];
+    final int second = octets[1];
+
+    final bool private10 = first == 10;
+    final bool private172 = first == 172 && second >= 16 && second <= 31;
+    final bool private192 = first == 192 && second == 168;
+    final bool linkLocal = first == 169 && second == 254;
+
+    return private10 || private172 || private192 || linkLocal;
   }
 }
