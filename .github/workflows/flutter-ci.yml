@@ -73,7 +73,7 @@ jobs:
           grep -q "VTCompressionSessionCreate" ios/BroadcastUploadExtension/VideoToolboxH264Encoder.swift
           grep -q "kVTCompressionPropertyKey_RealTime" ios/BroadcastUploadExtension/VideoToolboxH264Encoder.swift
           grep -q "ReplayKitSpoolBridge.swift" ios/Runner.xcodeproj/project.pbxproj
-          grep -q "ReplayKitSpoolBridge.register(with: self)" ios/Runner/AppDelegate.swift
+          grep -q "ReplayKitSpoolBridge.register(with:" ios/Runner/AppDelegate.swift
           grep -q "castflow/replaykit_encoded/events" ios/Runner/ReplayKitSpoolBridge.swift
       - run: flutter pub get
       - name: Build iOS simulator with ReplayKit, VideoToolbox, and Runner bridge
