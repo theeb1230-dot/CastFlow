@@ -51,7 +51,8 @@ class AdaptiveBitrateController {
 
   bool _shouldDegrade(ConnectionMetrics metrics) {
     final double? availableBitrate = metrics.availableOutgoingBitrateBps;
-    final bool bitrateStarved = availableBitrate != null &&
+    final bool bitrateStarved =
+        availableBitrate != null &&
         availableBitrate < _currentProfile.targetBitrateBps * 0.9;
 
     return metrics.isDegraded || bitrateStarved;
@@ -72,8 +73,7 @@ class AdaptiveBitrateController {
       return false;
     }
 
-    final double required =
-        next.targetBitrateBps * upgradeBitrateHeadroom;
+    final double required = next.targetBitrateBps * upgradeBitrateHeadroom;
 
     return availableBitrate >= required &&
         (metrics.roundTripTimeMs == null || metrics.roundTripTimeMs! < 80) &&
