@@ -2,7 +2,14 @@ import 'dart:async';
 
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../../domain/entities/connection_metrics.dart';
+import 'webrtc_stats_parser.dart';
+
 class WebRtcOrchestrator {
+  WebRtcOrchestrator({WebRtcStatsParser statsParser = const WebRtcStatsParser()})
+    : _statsParser = statsParser;
+
+  final WebRtcStatsParser _statsParser;
   RTCPeerConnection? _peerConnection;
 
   final StreamController<RTCIceCandidate> _localCandidatesController =
@@ -77,6 +84,11 @@ class WebRtcOrchestrator {
 
   Future<void> restartIce() {
     return _requirePeerConnection().restartIce();
+  }
+
+  Future<ConnectionMetrics> collectConnectionMetrics() async {
+    final List<StatsReport> reports = await _requirePeerConnection().getStats();
+    return _statsParser.parse(reports);
   }
 
   Future<void> dispose() async {
