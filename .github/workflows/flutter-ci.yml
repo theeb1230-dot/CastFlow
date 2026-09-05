@@ -30,6 +30,8 @@ jobs:
           grep -q "castflow/media_projection" android/app/src/main/kotlin/com/castflow/castflow/MediaProjectionSessionBridge.kt
           grep -q "onProjectionStopped" android/app/src/main/kotlin/com/castflow/castflow/MediaProjectionSessionBridge.kt
           grep -q "castflow/hardware_encoder" android/app/src/main/kotlin/com/castflow/castflow/HardwareEncoderBridge.kt
+          grep -q "castflow/hardware_decoder" android/app/src/main/kotlin/com/castflow/castflow/HardwareDecoderBridge.kt
+          grep -q "MediaCodec.createDecoderByType" android/app/src/main/kotlin/com/castflow/castflow/HardwareDecoderBridge.kt
           grep -q "createVirtualDisplay" android/app/src/main/kotlin/com/castflow/castflow/HardwareEncoderBridge.kt
           grep -q "PARAMETER_KEY_VIDEO_BITRATE" android/app/src/main/kotlin/com/castflow/castflow/HardwareEncoderBridge.kt
           grep -q "readyResultCode" android/app/src/main/kotlin/com/castflow/castflow/ScreenCaptureForegroundService.kt
