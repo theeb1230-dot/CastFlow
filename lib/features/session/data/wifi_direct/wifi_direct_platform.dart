@@ -26,19 +26,20 @@ class WifiDirectPlatform {
       return const <WifiDirectPeer>[];
     }
 
-    return raw.map((Object? value) {
-      if (value is! Map<Object?, Object?>) {
-        throw const FormatException('Invalid Wi-Fi Direct peer list.');
-      }
-      return WifiDirectPeer.fromMap(value);
-    }).toList(growable: false);
+    return raw
+        .map((Object? value) {
+          if (value is! Map<Object?, Object?>) {
+            throw const FormatException('Invalid Wi-Fi Direct peer list.');
+          }
+          return WifiDirectPeer.fromMap(value);
+        })
+        .toList(growable: false);
   }
 
   Future<void> connect(String deviceAddress) {
-    return _channel.invokeMethod<void>(
-      'connect',
-      <String, Object?>{'deviceAddress': deviceAddress},
-    );
+    return _channel.invokeMethod<void>('connect', <String, Object?>{
+      'deviceAddress': deviceAddress,
+    });
   }
 
   Future<void> createGroup() {
@@ -50,8 +51,8 @@ class WifiDirectPlatform {
   }
 
   Future<Map<Object?, Object?>> getConnectionInfo() async {
-    final Map<Object?, Object?>? info =
-        await _channel.invokeMethod<Map<Object?, Object?>>('getConnectionInfo');
+    final Map<Object?, Object?>? info = await _channel
+        .invokeMethod<Map<Object?, Object?>>('getConnectionInfo');
     return info ?? const <Object?, Object?>{};
   }
 }
