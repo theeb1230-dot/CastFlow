@@ -88,10 +88,7 @@ void main() {
     await controller.ingest(degradedMetrics());
 
     expect(controller.appliedProfile, StreamingProfile.balanced);
-    expect(
-      encoder.calls,
-      <String>['start:high', 'stop', 'start:balanced'],
-    );
+    expect(encoder.calls, <String>['start:high', 'stop', 'start:balanced']);
   });
 
   test('rolls back previous profile if encoder restart fails', () async {
@@ -112,15 +109,12 @@ void main() {
       throwsA(isA<StateError>()),
     );
     expect(controller.appliedProfile, StreamingProfile.high);
-    expect(
-      encoder.calls,
-      <String>[
-        'start:high',
-        'stop',
-        'start:balanced',
-        'start:high',
-      ],
-    );
+    expect(encoder.calls, <String>[
+      'start:high',
+      'stop',
+      'start:balanced',
+      'start:high',
+    ]);
   });
 
   test('upgrades only after ABR hysteresis threshold', () async {
@@ -139,9 +133,6 @@ void main() {
 
     await controller.ingest(healthyMetrics());
     expect(controller.appliedProfile, StreamingProfile.balanced);
-    expect(
-      encoder.calls,
-      <String>['start:low', 'stop', 'start:balanced'],
-    );
+    expect(encoder.calls, <String>['start:low', 'stop', 'start:balanced']);
   });
 }
