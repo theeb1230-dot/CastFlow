@@ -13,7 +13,9 @@ class WebRtcDataChannelVideoTransport implements BinaryVideoTransport {
     this.backpressureTimeout = const Duration(seconds: 2),
   }) {
     _channel.bufferedAmountLowThreshold = lowWaterMarkBytes;
-    _subscription = _channel.messageStream.listen((RTCDataChannelMessage message) {
+    _subscription = _channel.messageStream.listen((
+      RTCDataChannelMessage message,
+    ) {
       if (message.isBinary && !_messagesController.isClosed) {
         _messagesController.add(message.binary);
       }
