@@ -23,13 +23,11 @@ class SignalingSessionBridge {
     }
 
     _messageSubscription = _transport.messages.listen(_handleMessage);
-    _iceSubscription = _rtc.localIceCandidates.listen(
-      (Map<String, Object?> payload) {
-        unawaited(
-          _transport.send(SignalingMessageType.iceCandidate, payload),
-        );
-      },
-    );
+    _iceSubscription = _rtc.localIceCandidates.listen((
+      Map<String, Object?> payload,
+    ) {
+      unawaited(_transport.send(SignalingMessageType.iceCandidate, payload));
+    });
   }
 
   Future<void> createAndSendOffer() async {
