@@ -19,6 +19,13 @@ jobs:
         run: |
           flutter create --platforms=android,ios --org com.castflow .
           rm -f test/widget_test.dart
+      - name: Verify platform configuration
+        run: |
+          grep -q "android.intent.category.LEANBACK_LAUNCHER" android/app/src/main/AndroidManifest.xml
+          grep -q "android.permission.CHANGE_WIFI_MULTICAST_STATE" android/app/src/main/AndroidManifest.xml
+          grep -q "android.permission.NEARBY_WIFI_DEVICES" android/app/src/main/AndroidManifest.xml
+          grep -q "NSLocalNetworkUsageDescription" ios/Runner/Info.plist
+          grep -q "_castflow._tcp" ios/Runner/Info.plist
       - run: flutter pub get
       - name: Verify formatting
         run: |
