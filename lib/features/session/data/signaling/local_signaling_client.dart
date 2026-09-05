@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../domain/entities/signaling_message.dart';
+import '../../domain/repositories/signaling_transport.dart';
 import 'signaling_codec.dart';
 
-class LocalSignalingClient {
+class LocalSignalingClient implements SignalingTransport {
   LocalSignalingClient({
     required this.host,
     required this.port,
@@ -26,6 +27,7 @@ class LocalSignalingClient {
   Socket? _socket;
   StreamSubscription<String>? _subscription;
 
+  @override
   Stream<SignalingMessage> get messages => _messagesController.stream;
 
   Future<void> connect({Duration timeout = const Duration(seconds: 5)}) async {
@@ -66,6 +68,7 @@ class LocalSignalingClient {
         );
   }
 
+  @override
   Future<void> send(
     SignalingMessageType type,
     Map<String, Object?> payload,
