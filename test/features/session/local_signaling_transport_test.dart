@@ -40,7 +40,6 @@ void main() {
     await server.dispose();
   });
 
-
   test('does not broadcast signaling to unauthenticated sockets', () async {
     final LocalSignalingServer server = LocalSignalingServer(
       sessionId: 'session-1',
