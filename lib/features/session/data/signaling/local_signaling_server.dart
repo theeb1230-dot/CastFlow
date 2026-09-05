@@ -10,10 +10,11 @@ class LocalSignalingServer {
   LocalSignalingServer({
     required this.sessionId,
     required this.token,
-    this.address = InternetAddress.anyIPv4,
+    InternetAddress? address,
     this.port = 0,
     SignalingCodec codec = const SignalingCodec(),
-  }) : _codec = codec;
+  }) : address = address ?? InternetAddress.anyIPv4,
+       _codec = codec;
 
   final String sessionId;
   final String token;
@@ -80,6 +81,7 @@ class LocalSignalingServer {
     _clients.add(socket);
 
     socket
+        .cast<List<int>>()
         .transform(utf8.decoder)
         .transform(const LineSplitter())
         .listen(
