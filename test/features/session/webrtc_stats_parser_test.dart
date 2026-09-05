@@ -7,33 +7,20 @@ void main() {
 
   test('extracts RTT, jitter, loss and bitrate metrics', () {
     final List<StatsReport> reports = <StatsReport>[
-      StatsReport(
-        'candidate-1',
-        'candidate-pair',
-        1,
-        <String, Object?>{
-          'state': 'succeeded',
-          'currentRoundTripTime': 0.042,
-          'availableOutgoingBitrate': 8500000,
-        },
-      ),
-      StatsReport(
-        'inbound-1',
-        'inbound-rtp',
-        1,
-        <String, Object?>{
-          'jitter': 0.007,
-          'packetsLost': 5,
-          'packetsReceived': 995,
-          'bytesReceived': 4000000,
-        },
-      ),
-      StatsReport(
-        'outbound-1',
-        'outbound-rtp',
-        1,
-        <String, Object?>{'bytesSent': 5000000},
-      ),
+      StatsReport('candidate-1', 'candidate-pair', 1, <String, Object?>{
+        'state': 'succeeded',
+        'currentRoundTripTime': 0.042,
+        'availableOutgoingBitrate': 8500000,
+      }),
+      StatsReport('inbound-1', 'inbound-rtp', 1, <String, Object?>{
+        'jitter': 0.007,
+        'packetsLost': 5,
+        'packetsReceived': 995,
+        'bytesReceived': 4000000,
+      }),
+      StatsReport('outbound-1', 'outbound-rtp', 1, <String, Object?>{
+        'bytesSent': 5000000,
+      }),
     ];
 
     final metrics = parser.parse(reports);
@@ -49,25 +36,15 @@ void main() {
 
   test('marks materially degraded connections', () {
     final List<StatsReport> reports = <StatsReport>[
-      StatsReport(
-        'candidate-1',
-        'candidate-pair',
-        1,
-        <String, Object?>{
-          'selected': true,
-          'currentRoundTripTime': 0.15,
-        },
-      ),
-      StatsReport(
-        'inbound-1',
-        'inbound-rtp',
-        1,
-        <String, Object?>{
-          'jitter': 0.04,
-          'packetsLost': 60,
-          'packetsReceived': 940,
-        },
-      ),
+      StatsReport('candidate-1', 'candidate-pair', 1, <String, Object?>{
+        'selected': true,
+        'currentRoundTripTime': 0.15,
+      }),
+      StatsReport('inbound-1', 'inbound-rtp', 1, <String, Object?>{
+        'jitter': 0.04,
+        'packetsLost': 60,
+        'packetsReceived': 940,
+      }),
     ];
 
     final metrics = parser.parse(reports);
