@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../../../streaming/data/webrtc/webrtc_video_sender_adapter.dart';
+import '../../../streaming/domain/repositories/video_sender_tuning_port.dart';
 import '../../domain/entities/connection_metrics.dart';
 import 'webrtc_stats_parser.dart';
 
@@ -97,6 +99,17 @@ class WebRtcOrchestrator {
     }
 
     return List<RTCRtpSender>.unmodifiable(senders);
+  }
+
+  Future<List<VideoSenderTuningPort>> attachLocalVideoSenders(
+    MediaStream stream,
+  ) async {
+    final List<RTCRtpSender> senders = await attachLocalStream(stream);
+    return List<VideoSenderTuningPort>.unmodifiable(
+      senders
+          .where((RTCRtpSender sender) => sender.track?.kind == 'video')
+          .map(WebRtcVideoSenderAdapter.new),
+    );
   }
 
   Future<ConnectionMetrics> collectConnectionMetrics() async {
