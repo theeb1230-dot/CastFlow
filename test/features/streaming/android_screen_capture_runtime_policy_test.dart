@@ -5,9 +5,12 @@ void main() {
   const AndroidScreenCaptureRuntimePolicy policy =
       AndroidScreenCaptureRuntimePolicy();
 
-  test('allows legacy getDisplayMedia foreground-service flow through API 33', () {
-    expect(policy.supportsLegacyGetDisplayMediaFlow(33), isTrue);
-  });
+  test(
+    'allows legacy getDisplayMedia foreground-service flow through API 33',
+    () {
+      expect(policy.supportsLegacyGetDisplayMediaFlow(33), isTrue);
+    },
+  );
 
   test('blocks legacy flow on Android 14 and newer', () {
     expect(policy.supportsLegacyGetDisplayMediaFlow(34), isFalse);
