@@ -17,9 +17,7 @@ class EncodedVideoPacketEventDecoder {
     final dynamic presentationTimeUs = event['presentationTimeUs'];
     final dynamic flags = event['flags'];
 
-    if (data is! Uint8List ||
-        presentationTimeUs is! int ||
-        flags is! int) {
+    if (data is! Uint8List || presentationTimeUs is! int || flags is! int) {
       throw const FormatException('Encoded video event fields are invalid.');
     }
 
