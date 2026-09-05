@@ -43,10 +43,7 @@ void main() {
     final SessionRecoveryController controller = SessionRecoveryController(
       port: port,
       maxAttempts: 2,
-      backoff: const <Duration>[
-        Duration.zero,
-        Duration(milliseconds: 250),
-      ],
+      backoff: const <Duration>[Duration.zero, Duration(milliseconds: 250)],
       sleeper: (Duration duration) async => sleeps.add(duration),
     );
 
@@ -75,18 +72,21 @@ void main() {
     expect(controller.state, SessionRecoveryState.connected);
   });
 
-  test('failed restarts exhaust the controller at the configured limit', () async {
-    final _FakeRecoveryPort port = _FakeRecoveryPort()..fail = true;
-    final SessionRecoveryController controller = SessionRecoveryController(
-      port: port,
-      maxAttempts: 2,
-      sleeper: (_) async {},
-    );
+  test(
+    'failed restarts exhaust the controller at the configured limit',
+    () async {
+      final _FakeRecoveryPort port = _FakeRecoveryPort()..fail = true;
+      final SessionRecoveryController controller = SessionRecoveryController(
+        port: port,
+        maxAttempts: 2,
+        sleeper: (_) async {},
+      );
 
-    await expectLater(controller.onTransportLost(), throwsStateError);
-    await expectLater(controller.onTransportLost(), throwsStateError);
+      await expectLater(controller.onTransportLost(), throwsStateError);
+      await expectLater(controller.onTransportLost(), throwsStateError);
 
-    expect(controller.state, SessionRecoveryState.exhausted);
-    expect(controller.attempts, 2);
-  });
+      expect(controller.state, SessionRecoveryState.exhausted);
+      expect(controller.attempts, 2);
+    },
+  );
 }
