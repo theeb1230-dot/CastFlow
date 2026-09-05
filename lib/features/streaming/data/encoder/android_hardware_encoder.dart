@@ -9,10 +9,12 @@ import '../../domain/entities/streaming_profile.dart';
 
 class AndroidHardwareEncoder {
   AndroidHardwareEncoder({
-    MethodChannel methodChannel =
-        const MethodChannel('castflow/hardware_encoder'),
-    EventChannel eventChannel =
-        const EventChannel('castflow/hardware_encoder/events'),
+    MethodChannel methodChannel = const MethodChannel(
+      'castflow/hardware_encoder',
+    ),
+    EventChannel eventChannel = const EventChannel(
+      'castflow/hardware_encoder/events',
+    ),
   }) : _methodChannel = methodChannel,
        _eventChannel = eventChannel;
 
