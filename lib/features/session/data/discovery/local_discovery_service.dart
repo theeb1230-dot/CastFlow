@@ -58,12 +58,7 @@ class LocalDiscoveryService {
     };
 
     _registration = await nsd.register(
-      nsd.Service(
-        name: name,
-        type: serviceType,
-        port: port,
-        txt: txt,
-      ),
+      nsd.Service(name: name, type: serviceType, port: port, txt: txt),
     );
   }
 
