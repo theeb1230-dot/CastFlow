@@ -22,7 +22,9 @@ class HandshakeCodec {
 
     final String raw = value.substring(prefix.length);
     final String normalized = raw.padRight((raw.length + 3) ~/ 4 * 4, '=');
-    final Object? decoded = jsonDecode(utf8.decode(base64Url.decode(normalized)));
+    final Object? decoded = jsonDecode(
+      utf8.decode(base64Url.decode(normalized)),
+    );
 
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Invalid CastFlow handshake JSON.');
