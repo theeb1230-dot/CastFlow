@@ -83,6 +83,10 @@ class MediaProjectionSessionBridge(
         return true
     }
 
+    fun activeProjection(): MediaProjection? = mediaProjection
+
+    fun densityDpi(): Int = activity.resources.displayMetrics.densityDpi
+
     fun dispose() {
         val result = pendingResult
         clearPendingConsent()
