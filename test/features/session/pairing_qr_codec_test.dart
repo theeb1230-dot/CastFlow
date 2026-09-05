@@ -45,6 +45,46 @@ void main() {
     );
   });
 
+
+  test('rejects public and hostname pairing targets', () {
+    final String publicIp = codec.encode(
+      HandshakePayload(
+        version: PairingQrCodec.supportedVersion,
+        sessionId: 'session-123',
+        peerId: 'peer-123',
+        peerName: 'Receiver',
+        host: '8.8.8.8',
+        port: 45678,
+        expiresAtEpochSeconds:
+            now.add(const Duration(minutes: 5)).millisecondsSinceEpoch ~/ 1000,
+        token: 'abcdefghijklmnopqrstuvwx12345678',
+      ),
+    );
+
+    final String hostname = codec.encode(
+      HandshakePayload(
+        version: PairingQrCodec.supportedVersion,
+        sessionId: 'session-123',
+        peerId: 'peer-123',
+        peerName: 'Receiver',
+        host: 'example.com',
+        port: 45678,
+        expiresAtEpochSeconds:
+            now.add(const Duration(minutes: 5)).millisecondsSinceEpoch ~/ 1000,
+        token: 'abcdefghijklmnopqrstuvwx12345678',
+      ),
+    );
+
+    expect(
+      () => codec.decode(publicIp, now: now),
+      throwsA(isA<FormatException>()),
+    );
+    expect(
+      () => codec.decode(hostname, now: now),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('rejects non CastFlow payloads', () {
     expect(
       () => codec.decode('https://example.com/not-castflow', now: now),
