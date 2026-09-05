@@ -4,8 +4,9 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 
 import '../../domain/entities/encoded_video_packet.dart';
+import '../../domain/repositories/encoded_video_renderer_port.dart';
 
-class AndroidTvH264Renderer {
+class AndroidTvH264Renderer implements EncodedVideoRendererPort {
   AndroidTvH264Renderer({
     MethodChannel channel = const MethodChannel('castflow/hardware_decoder'),
   }) : _channel = channel;
@@ -13,8 +14,10 @@ class AndroidTvH264Renderer {
   final MethodChannel _channel;
   int? _textureId;
 
+  @override
   int? get textureId => _textureId;
 
+  @override
   Future<int> initialize({required int width, required int height}) async {
     if (!Platform.isAndroid) {
       throw UnsupportedError(
@@ -36,6 +39,7 @@ class AndroidTvH264Renderer {
     return textureId;
   }
 
+  @override
   Future<void> push(EncodedVideoPacket packet) async {
     if (!Platform.isAndroid) {
       return;
@@ -51,6 +55,7 @@ class AndroidTvH264Renderer {
     });
   }
 
+  @override
   Future<void> dispose() async {
     if (Platform.isAndroid) {
       await _channel.invokeMethod<void>('dispose');
