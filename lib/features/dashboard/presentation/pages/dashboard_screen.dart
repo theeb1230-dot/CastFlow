@@ -92,18 +92,14 @@ class _DashboardViewState extends State<_DashboardView>
               const SizedBox(height: 6),
               Text(
                 'بدون إنترنت • جودة عالية • تأخير منخفض جدًا',
-                style: TextStyle(
-                  color: Colors.grey.shade400,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
               ),
               const SizedBox(height: 36),
               Expanded(
                 child: Center(
                   child: BlocBuilder<DiscoveryCubit, DiscoveryStatus>(
                     builder: (context, status) {
-                      final bool scanning =
-                          status == DiscoveryStatus.scanning;
+                      final bool scanning = status == DiscoveryStatus.scanning;
                       return GestureDetector(
                         onTap: context.read<DiscoveryCubit>().toggle,
                         child: Stack(
@@ -208,9 +204,7 @@ class _ActionCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.surfaceDark,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.05),
-          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,10 +221,7 @@ class _ActionCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
             ),
           ],
         ),
