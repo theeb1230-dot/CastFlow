@@ -20,7 +20,7 @@ void main() {
       sessionId: 'session-1',
       token: 'token-1',
     );
-    await client.connect();
+    await client.connectAuthenticated();
 
     final Future<SignalingMessage> received = server.messages.first;
 
