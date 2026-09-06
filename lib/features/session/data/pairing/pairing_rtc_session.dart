@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../../../streaming/data/webrtc/encoded_video_webrtc_session.dart';
+import '../../../streaming/domain/entities/encoded_video_packet.dart';
 import '../../domain/repositories/signaling_transport.dart';
 import '../signaling/signaling_session_bridge.dart';
 import '../webrtc/rtc_signaling_adapter.dart';
@@ -12,9 +14,13 @@ enum PairingRtcState { idle, connecting, connected, disconnected, failed }
 abstract interface class PairingRtcSessionPort {
   Stream<PairingRtcState> get states;
 
+  Stream<EncodedVideoPacket> get remoteVideoPackets;
+
   Future<void> startSender(SignalingTransport transport);
 
   Future<void> startReceiver(SignalingTransport transport);
+
+  Future<void> startVideoSender(Stream<EncodedVideoPacket> packets);
 
   Future<void> dispose();
 }
@@ -32,6 +38,7 @@ class PairingRtcSession implements PairingRtcSessionPort {
 
   SignalingSessionBridge? _bridge;
   StreamSubscription<RTCPeerConnectionState>? _connectionSubscription;
+  EncodedVideoWebRtcSession? _videoSession;
   PairingRtcState _state = PairingRtcState.idle;
   bool _disposed = false;
 
@@ -39,20 +46,54 @@ class PairingRtcSession implements PairingRtcSessionPort {
   Stream<PairingRtcState> get states => _stateController.stream;
 
   @override
+  Stream<EncodedVideoPacket> get remoteVideoPackets {
+    final EncodedVideoWebRtcSession? session = _videoSession;
+    if (session == null) {
+      throw StateError('PairingRtcSession has not started yet.');
+    }
+    return session.remotePackets;
+  }
+
+  @override
   Future<void> startSender(SignalingTransport transport) async {
     await _startCommon(transport);
+
     await _orchestrator.createDataChannel(
       label: controlChannelLabel,
       ordered: true,
       maxRetransmits: 3,
       protocol: controlChannelProtocol,
     );
+
     await _bridge!.createAndSendOffer();
   }
 
   @override
-  Future<void> startReceiver(SignalingTransport transport) {
-    return _startCommon(transport);
+  Future<void> startReceiver(SignalingTransport transport) async {
+    await _startCommon(transport);
+    final EncodedVideoWebRtcSession videoSession = EncodedVideoWebRtcSession(
+      orchestrator: _orchestrator,
+    );
+    videoSession.startReceiver();
+    _videoSession = videoSession;
+  }
+
+  @override
+  Future<void> startVideoSender(Stream<EncodedVideoPacket> packets) async {
+    if (_disposed) {
+      throw StateError('PairingRtcSession is disposed.');
+    }
+    if (_state != PairingRtcState.connected) {
+      throw StateError('WebRTC must be connected before starting video.');
+    }
+
+    await _videoSession?.dispose();
+    final EncodedVideoWebRtcSession videoSession = EncodedVideoWebRtcSession(
+      orchestrator: _orchestrator,
+      senderPackets: packets,
+    );
+    await videoSession.startSender();
+    _videoSession = videoSession;
   }
 
   Future<void> _startCommon(SignalingTransport transport) async {
@@ -114,6 +155,8 @@ class PairingRtcSession implements PairingRtcSessionPort {
     _disposed = true;
     await _connectionSubscription?.cancel();
     _connectionSubscription = null;
+    await _videoSession?.dispose();
+    _videoSession = null;
     await _bridge?.dispose();
     _bridge = null;
     await _orchestrator.dispose();
