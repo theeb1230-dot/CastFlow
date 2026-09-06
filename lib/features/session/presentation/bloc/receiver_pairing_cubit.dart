@@ -7,10 +7,11 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/pairing/pairing_qr_codec.dart';
+import '../../data/pairing/pairing_rtc_session.dart';
 import '../../data/signaling/local_signaling_server.dart';
 import '../../domain/entities/handshake_payload.dart';
 
-enum ReceiverPairingStatus { idle, starting, ready, failure }
+enum ReceiverPairingStatus { idle, starting, ready, connected, failure }
 
 class ReceiverPairingState extends Equatable {
   const ReceiverPairingState({
@@ -44,17 +45,24 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
   ReceiverPairingCubit({
     PairingQrCodec codec = const PairingQrCodec(),
     Random? secureRandom,
+    PairingRtcSessionPort Function()? rtcSessionFactory,
   }) : _codec = codec,
        _random = secureRandom ?? Random.secure(),
+       _rtcSessionFactory = rtcSessionFactory ?? PairingRtcSession.new,
        super(const ReceiverPairingState());
 
   final PairingQrCodec _codec;
   final Random _random;
+  final PairingRtcSessionPort Function() _rtcSessionFactory;
+
   LocalSignalingServer? _server;
+  PairingRtcSessionPort? _rtcSession;
+  StreamSubscription<PairingRtcState>? _rtcStateSubscription;
 
   Future<void> start() async {
     if (state.status == ReceiverPairingStatus.starting ||
-        state.status == ReceiverPairingStatus.ready) {
+        state.status == ReceiverPairingStatus.ready ||
+        state.status == ReceiverPairingStatus.connected) {
       return;
     }
 
@@ -63,6 +71,8 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
     );
 
     try {
+      await _disposeRuntime();
+
       final String host = await _resolveLanIpv4();
       final String sessionId = _randomToken(18);
       final String token = _randomToken(32);
@@ -73,7 +83,43 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
         token: token,
       );
       await server.start();
+
+      final PairingRtcSessionPort rtcSession = _rtcSessionFactory();
+      _rtcStateSubscription = rtcSession.states.listen((PairingRtcState value) {
+        if (isClosed) {
+          return;
+        }
+        switch (value) {
+          case PairingRtcState.connected:
+            emit(
+              ReceiverPairingState(
+                status: ReceiverPairingStatus.connected,
+                qrData: state.qrData,
+              ),
+            );
+            break;
+          case PairingRtcState.failed:
+          case PairingRtcState.disconnected:
+            if (state.status == ReceiverPairingStatus.connected) {
+              emit(
+                ReceiverPairingState(
+                  status: ReceiverPairingStatus.failure,
+                  qrData: state.qrData,
+                  errorMessage:
+                      'انقطع اتصال WebRTC مع جهاز الإرسال. أعد المحاولة لإنشاء جلسة جديدة.',
+                ),
+              );
+            }
+            break;
+          case PairingRtcState.idle:
+          case PairingRtcState.connecting:
+            break;
+        }
+      });
+      await rtcSession.startReceiver(server);
+
       _server = server;
+      _rtcSession = rtcSession;
 
       final int expiresAt =
           DateTime.now()
@@ -100,8 +146,7 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
         ),
       );
     } catch (error) {
-      await _server?.dispose();
-      _server = null;
+      await _disposeRuntime();
       emit(
         ReceiverPairingState(
           status: ReceiverPairingStatus.failure,
@@ -112,15 +157,22 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
   }
 
   Future<void> stop() async {
+    await _disposeRuntime();
+    emit(const ReceiverPairingState());
+  }
+
+  Future<void> _disposeRuntime() async {
+    await _rtcStateSubscription?.cancel();
+    _rtcStateSubscription = null;
+    await _rtcSession?.dispose();
+    _rtcSession = null;
     await _server?.dispose();
     _server = null;
-    emit(const ReceiverPairingState());
   }
 
   @override
   Future<void> close() async {
-    await _server?.dispose();
-    _server = null;
+    await _disposeRuntime();
     return super.close();
   }
 
@@ -139,14 +191,39 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
       includeLoopback: false,
     );
 
+    final List<InternetAddress> candidates = <InternetAddress>[];
     for (final NetworkInterface interface in interfaces) {
       for (final InternetAddress address in interface.addresses) {
         if (!address.isLoopback && address.type == InternetAddressType.IPv4) {
-          return address.address;
+          candidates.add(address);
         }
       }
     }
 
+    InternetAddress? preferred;
+    for (final InternetAddress address in candidates) {
+      if (_isPrivateLanAddress(address)) {
+        preferred = address;
+        break;
+      }
+    }
+
+    final InternetAddress? selected =
+        preferred ?? (candidates.isEmpty ? null : candidates.first);
+    if (selected != null) {
+      return selected.address;
+    }
+
     throw StateError('No local IPv4 address is available for QR pairing.');
+  }
+
+  bool _isPrivateLanAddress(InternetAddress address) {
+    final List<int> bytes = address.rawAddress;
+    if (bytes.length != 4) {
+      return false;
+    }
+    return bytes[0] == 10 ||
+        (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
+        (bytes[0] == 192 && bytes[1] == 168);
   }
 }
