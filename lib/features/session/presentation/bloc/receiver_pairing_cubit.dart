@@ -85,6 +85,8 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
       await server.start();
 
       final PairingRtcSessionPort rtcSession = _rtcSessionFactory();
+      _server = server;
+      _rtcSession = rtcSession;
       _rtcStateSubscription = rtcSession.states.listen((PairingRtcState value) {
         if (isClosed) {
           return;
@@ -117,9 +119,6 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
         }
       });
       await rtcSession.startReceiver(server);
-
-      _server = server;
-      _rtcSession = rtcSession;
 
       final int expiresAt =
           DateTime.now()
