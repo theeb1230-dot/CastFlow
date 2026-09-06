@@ -1,24 +1,31 @@
 # Sender / Receiver QR pairing
 
-CastFlow now exposes runnable sender and receiver pairing surfaces from the dashboard.
+CastFlow uses the QR code only to exchange short-lived LAN connection coordinates and credentials. A QR scan by itself is **not** considered a successful pairing.
 
 ## Receiver flow
 
-- starts the existing LAN-only authenticated signaling server
-- resolves a non-loopback IPv4 address
-- generates cryptographically secure session credentials
-- publishes a five-minute pairing payload as a QR code
-- keeps signaling local to the LAN
+- starts the authenticated LAN signaling server;
+- resolves a private LAN IPv4 address when available;
+- initializes a WebRTC peer connection before displaying the QR code;
+- publishes a five-minute pairing payload;
+- processes SDP offer/answer and ICE candidates over the authenticated local signaling channel;
+- leaves the QR screen only after `RTCPeerConnectionState.connected` is observed;
+- reports disconnect/failure instead of silently remaining paired.
 
 ## Sender flow
 
-- scans the CastFlow QR code with the device camera
-- validates the payload prefix, version, field sizes, port, token length, and expiry
-- connects to the authenticated local signaling server
-- reports pairing success only after the local TCP connection is established
+- scans and validates the CastFlow QR payload;
+- authenticates to the local signaling server;
+- initializes WebRTC;
+- creates a reliable CastFlow control DataChannel so ICE/DTLS negotiation must actually complete;
+- exchanges SDP and ICE with the receiver;
+- reports “connected” only after the peer connection reaches the connected state;
+- fails with a visible timeout instead of reporting a false successful pair.
 
-The QR payload contains local connection coordinates and ephemeral credentials. It does not require internet access.
+The control connection is local and does not require an internet service.
 
-## Scope boundary
+## Runtime qualification boundary
 
-This stage removes the previous no-op Sender/Receiver buttons and establishes a real authenticated local pairing path. It does not yet claim that pressing the sender screen starts MediaProjection or ReplayKit casting automatically, nor that a physical-device cross-platform E2E casting matrix has passed. Those runtime orchestration and release gates remain required before Beta qualification.
+This fixes the false-positive pairing behavior observed on a physical phone/Android TV test, where the phone reported success while the TV remained on the QR screen.
+
+A verified WebRTC control connection is still distinct from a proven end-to-end screen-casting session. MediaProjection/ReplayKit capture, encoded video transport, TV rendering, interruption recovery and real-device E2E evidence remain mandatory before Beta qualification.

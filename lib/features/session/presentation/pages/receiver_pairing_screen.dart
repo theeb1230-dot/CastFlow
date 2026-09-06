@@ -52,6 +52,34 @@ class _ReceiverPairingView extends StatelessWidget {
                 );
               }
 
+              if (state.status == ReceiverPairingStatus.connected) {
+                return const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      Icons.check_circle,
+                      size: 72,
+                      color: AppTheme.successGreen,
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      'تم الاتصال بجهاز الإرسال',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'اتصال WebRTC المحلي جاهز. يمكنك الآن متابعة جلسة الإرسال.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppTheme.primaryCyan),
+                    ),
+                  ],
+                );
+              }
+
               final String? qrData = state.qrData;
               if (qrData == null) {
                 return const SizedBox.shrink();

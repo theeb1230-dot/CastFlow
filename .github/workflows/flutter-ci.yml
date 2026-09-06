@@ -101,15 +101,15 @@ jobs:
 
           test "$MOBILE_VERSION_CODE" = "$TV_VERSION_CODE"
           test "$MOBILE_VERSION_NAME" = "$TV_VERSION_NAME"
-          test "$MOBILE_VERSION_NAME" = "1.0.0"
-          test "$MOBILE_VERSION_CODE" = "1"
+          test "$MOBILE_VERSION_NAME" = "1.0.1"
+          test "$MOBILE_VERSION_CODE" = "2"
 
           "$APKSIGNER" verify --verbose "$MOBILE_APK"
           "$APKSIGNER" verify --verbose "$TV_APK"
 
           mkdir -p build/release-artifacts
-          cp "$MOBILE_APK" "build/release-artifacts/CastFlow-1.0.0+1-Android-Mobile.apk"
-          cp "$TV_APK" "build/release-artifacts/CastFlow-1.0.0+1-Android-TV.apk"
+          cp "$MOBILE_APK" "build/release-artifacts/CastFlow-1.0.1+2-Android-Mobile.apk"
+          cp "$TV_APK" "build/release-artifacts/CastFlow-1.0.1+2-Android-TV.apk"
           (
             cd build/release-artifacts
             sha256sum CastFlow-*.apk > SHA256SUMS
@@ -118,7 +118,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           {
             echo "git_commit=$SOURCE_SHA"
-            echo "version=1.0.0+1"
+            echo "version=1.0.1+2"
             echo "mobile_package=com.castflow.castflow.mobile"
             echo "tv_package=com.castflow.castflow.tv"
           } > build/release-artifacts/BUILD_PROVENANCE.txt
@@ -169,7 +169,7 @@ jobs:
         run: flutter build ios --simulator --debug
       - name: Build unsigned iPhoneOS release app
         run: |
-          flutter build ios --release --no-codesign --build-name=1.0.0 --build-number=1
+          flutter build ios --release --no-codesign --build-name=1.0.1 --build-number=2
           test -d build/ios/iphoneos/Runner.app
           test -d build/ios/iphoneos/Runner.app/PlugIns/BroadcastUploadExtension.appex
       - name: Package and validate unsigned IPA
@@ -179,7 +179,7 @@ jobs:
 
           STAGE_DIR="build/ipa-unsigned-stage"
           ARTIFACT_DIR="build/ios-ipa-artifacts"
-          IPA="$ARTIFACT_DIR/CastFlow-1.0.0+1-iOS-unsigned.ipa"
+          IPA="$ARTIFACT_DIR/CastFlow-1.0.1+2-iOS-unsigned.ipa"
 
           rm -rf "$STAGE_DIR" "$ARTIFACT_DIR"
           mkdir -p "$STAGE_DIR/Payload" "$ARTIFACT_DIR"
@@ -199,10 +199,10 @@ jobs:
             fi
           }
 
-          set_plist_string "$APP_PLIST" CFBundleShortVersionString "1.0.0"
-          set_plist_string "$APP_PLIST" CFBundleVersion "1"
-          set_plist_string "$EXT_PLIST" CFBundleShortVersionString "1.0.0"
-          set_plist_string "$EXT_PLIST" CFBundleVersion "1"
+          set_plist_string "$APP_PLIST" CFBundleShortVersionString "1.0.1"
+          set_plist_string "$APP_PLIST" CFBundleVersion "2"
+          set_plist_string "$EXT_PLIST" CFBundleShortVersionString "1.0.1"
+          set_plist_string "$EXT_PLIST" CFBundleVersion "2"
 
           (
             cd "$STAGE_DIR"
@@ -215,7 +215,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           {
             echo "git_commit=$SOURCE_SHA"
-            echo "version=1.0.0+1"
+            echo "version=1.0.1+2"
             echo "bundle_id=com.castflow.castflow"
             echo "extension_bundle_id=com.castflow.castflow.BroadcastUploadExtension"
             echo "signing=unsigned"
@@ -253,9 +253,9 @@ jobs:
         run: |
           set -euo pipefail
           SOURCE_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
-          MOBILE="triplet/android/CastFlow-1.0.0+1-Android-Mobile.apk"
-          TV="triplet/android/CastFlow-1.0.0+1-Android-TV.apk"
-          IPA="triplet/ios/CastFlow-1.0.0+1-iOS-unsigned.ipa"
+          MOBILE="triplet/android/CastFlow-1.0.1+2-Android-Mobile.apk"
+          TV="triplet/android/CastFlow-1.0.1+2-Android-TV.apk"
+          IPA="triplet/ios/CastFlow-1.0.1+2-iOS-unsigned.ipa"
 
           test -s "$MOBILE"
           test -s "$TV"
@@ -264,8 +264,8 @@ jobs:
 
           grep -qx "git_commit=$SOURCE_SHA" triplet/android/BUILD_PROVENANCE.txt
           grep -qx "git_commit=$SOURCE_SHA" triplet/ios/BUILD_PROVENANCE.txt
-          grep -qx "version=1.0.0+1" triplet/android/BUILD_PROVENANCE.txt
-          grep -qx "version=1.0.0+1" triplet/ios/BUILD_PROVENANCE.txt
+          grep -qx "version=1.0.1+2" triplet/android/BUILD_PROVENANCE.txt
+          grep -qx "version=1.0.1+2" triplet/ios/BUILD_PROVENANCE.txt
 
           mkdir -p release-test-triplet
           cp "$MOBILE" release-test-triplet/
@@ -276,11 +276,11 @@ jobs:
             sha256sum CastFlow-* > SHA256SUMS
           )
           test "$(wc -l < release-test-triplet/SHA256SUMS)" -eq 3
-          printf '%s\n'             "source_commit=$SOURCE_SHA"             "version=1.0.0+1"             "grade=developer-test-build"             "ios_signing=unsigned"             "ios_installability=not-claimed"             > release-test-triplet/BUILD_PROVENANCE.txt
+          printf '%s\n'             "source_commit=$SOURCE_SHA"             "version=1.0.1+2"             "grade=developer-test-build"             "ios_signing=unsigned"             "ios_installability=not-claimed"             > release-test-triplet/BUILD_PROVENANCE.txt
       - name: Upload exact three-package test bundle
         uses: actions/upload-artifact@v4
         with:
-          name: CastFlow-1.0.0+1-test-triplet-${{ github.event.pull_request.head.sha || github.sha }}
+          name: CastFlow-1.0.1+2-test-triplet-${{ github.event.pull_request.head.sha || github.sha }}
           path: release-test-triplet/
           if-no-files-found: error
           retention-days: 14
@@ -293,20 +293,20 @@ jobs:
       - name: Download exact three-package test bundle
         uses: actions/download-artifact@v4
         with:
-          name: CastFlow-1.0.0+1-test-triplet-${{ github.sha }}
+          name: CastFlow-1.0.1+2-test-triplet-${{ github.sha }}
           path: release-test-triplet
       - name: Verify release assets fail-closed
         shell: bash
         run: |
           set -euo pipefail
-          test -s release-test-triplet/CastFlow-1.0.0+1-Android-Mobile.apk
-          test -s release-test-triplet/CastFlow-1.0.0+1-Android-TV.apk
-          test -s release-test-triplet/CastFlow-1.0.0+1-iOS-unsigned.ipa
+          test -s release-test-triplet/CastFlow-1.0.1+2-Android-Mobile.apk
+          test -s release-test-triplet/CastFlow-1.0.1+2-Android-TV.apk
+          test -s release-test-triplet/CastFlow-1.0.1+2-iOS-unsigned.ipa
           test -s release-test-triplet/SHA256SUMS
           test -s release-test-triplet/BUILD_PROVENANCE.txt
           test -z "$(find release-test-triplet -type f -name '*.aab' -print -quit)"
           grep -qx "source_commit=${{ github.sha }}" release-test-triplet/BUILD_PROVENANCE.txt
-          grep -qx "version=1.0.0+1" release-test-triplet/BUILD_PROVENANCE.txt
+          grep -qx "version=1.0.1+2" release-test-triplet/BUILD_PROVENANCE.txt
           grep -qx "ios_signing=unsigned" release-test-triplet/BUILD_PROVENANCE.txt
           test "$(wc -l < release-test-triplet/SHA256SUMS)" -eq 3
           (
@@ -321,14 +321,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TAG="v1.0.0-test.${RUN_NUMBER}"
-          TITLE="CastFlow 1.0.0+1 Developer Test Build"
+          TAG="v1.0.1-test.${RUN_NUMBER}"
+          TITLE="CastFlow 1.0.1+2 Developer Test Build"
           NOTES_FILE="$(mktemp)"
           cat > "$NOTES_FILE" <<EOF
           Developer test build for user testing.
 
           Source commit: ${SOURCE_SHA}
-          Version: 1.0.0+1
+          Version: 1.0.1+2
 
           Included:
           - Android Mobile APK
@@ -339,9 +339,9 @@ jobs:
           EOF
 
           gh release create "$TAG" \
-            release-test-triplet/CastFlow-1.0.0+1-Android-Mobile.apk \
-            release-test-triplet/CastFlow-1.0.0+1-Android-TV.apk \
-            release-test-triplet/CastFlow-1.0.0+1-iOS-unsigned.ipa \
+            release-test-triplet/CastFlow-1.0.1+2-Android-Mobile.apk \
+            release-test-triplet/CastFlow-1.0.1+2-Android-TV.apk \
+            release-test-triplet/CastFlow-1.0.1+2-iOS-unsigned.ipa \
             release-test-triplet/SHA256SUMS \
             release-test-triplet/BUILD_PROVENANCE.txt \
             --repo "${{ github.repository }}" \
