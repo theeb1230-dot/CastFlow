@@ -1,5 +1,8 @@
 name: Flutter CI
 
+permissions:
+  contents: write
+
 concurrency:
   group: flutter-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -281,3 +284,68 @@ jobs:
           path: release-test-triplet/
           if-no-files-found: error
           retention-days: 14
+
+  publish-test-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [test-triplet-gate]
+    steps:
+      - name: Download exact three-package test bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: CastFlow-1.0.0+1-test-triplet-${{ github.sha }}
+          path: release-test-triplet
+      - name: Verify release assets fail-closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s release-test-triplet/CastFlow-1.0.0+1-Android-Mobile.apk
+          test -s release-test-triplet/CastFlow-1.0.0+1-Android-TV.apk
+          test -s release-test-triplet/CastFlow-1.0.0+1-iOS-unsigned.ipa
+          test -s release-test-triplet/SHA256SUMS
+          test -s release-test-triplet/BUILD_PROVENANCE.txt
+          test -z "$(find release-test-triplet -type f -name '*.aab' -print -quit)"
+          grep -qx "source_commit=${{ github.sha }}" release-test-triplet/BUILD_PROVENANCE.txt
+          grep -qx "version=1.0.0+1" release-test-triplet/BUILD_PROVENANCE.txt
+          grep -qx "ios_signing=unsigned" release-test-triplet/BUILD_PROVENANCE.txt
+          test "$(wc -l < release-test-triplet/SHA256SUMS)" -eq 3
+          (
+            cd release-test-triplet
+            sha256sum -c SHA256SUMS
+          )
+      - name: Publish GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_NUMBER: ${{ github.run_number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v1.0.0-test.${RUN_NUMBER}"
+          TITLE="CastFlow 1.0.0+1 Developer Test Build"
+          NOTES_FILE="$(mktemp)"
+          cat > "$NOTES_FILE" <<EOF
+          Developer test build for user testing.
+
+          Source commit: ${SOURCE_SHA}
+          Version: 1.0.0+1
+
+          Included:
+          - Android Mobile APK
+          - Android TV APK
+          - iOS IPA (unsigned)
+
+          Important: the IPA is unsigned and is not claimed to be directly installable on a normal iPhone. This prerelease is not classified as Experimental/Beta/Golden/Complete until the corresponding runtime/device gates are proven.
+          EOF
+
+          gh release create "$TAG" \
+            release-test-triplet/CastFlow-1.0.0+1-Android-Mobile.apk \
+            release-test-triplet/CastFlow-1.0.0+1-Android-TV.apk \
+            release-test-triplet/CastFlow-1.0.0+1-iOS-unsigned.ipa \
+            release-test-triplet/SHA256SUMS \
+            release-test-triplet/BUILD_PROVENANCE.txt \
+            --repo "${{ github.repository }}" \
+            --target "$SOURCE_SHA" \
+            --title "$TITLE" \
+            --notes-file "$NOTES_FILE" \
+            --prerelease
