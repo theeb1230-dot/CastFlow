@@ -91,7 +91,7 @@ class _SenderPairingScreenState extends State<SenderPairingScreen> {
                     ),
                     title: const Text('يتم بث الشاشة الآن'),
                     subtitle: Text(
-                      '\${state.peerName ?? 'CastFlow Receiver'} • WebRTC + H.264',
+                      '${state.peerName ?? 'CastFlow Receiver'} • WebRTC + H.264',
                     ),
                   ),
                 if (state.status == SenderPairingStatus.failure)
