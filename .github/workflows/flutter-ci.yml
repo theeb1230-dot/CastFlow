@@ -1,5 +1,8 @@
 name: Flutter CI
 
+permissions:
+  contents: write
+
 concurrency:
   group: flutter-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -15,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -63,8 +68,6 @@ jobs:
         run: |
           flutter build apk --release --flavor mobile --dart-define=CASTFLOW_TARGET=mobile
           flutter build apk --release --flavor tv --dart-define=CASTFLOW_TARGET=tv
-          flutter build appbundle --release --flavor mobile --dart-define=CASTFLOW_TARGET=mobile
-          flutter build appbundle --release --flavor tv --dart-define=CASTFLOW_TARGET=tv
       - name: Validate Android release artifacts
         shell: bash
         run: |
@@ -72,13 +75,9 @@ jobs:
 
           MOBILE_APK="$(find build/app/outputs/flutter-apk -type f -name '*mobile-release.apk' -print -quit)"
           TV_APK="$(find build/app/outputs/flutter-apk -type f -name '*tv-release.apk' -print -quit)"
-          MOBILE_AAB="$(find build/app/outputs/bundle -type f -name '*mobile-release.aab' -print -quit)"
-          TV_AAB="$(find build/app/outputs/bundle -type f -name '*tv-release.aab' -print -quit)"
 
           test -n "$MOBILE_APK" && test -s "$MOBILE_APK"
           test -n "$TV_APK" && test -s "$TV_APK"
-          test -n "$MOBILE_AAB" && test -s "$MOBILE_AAB"
-          test -n "$TV_AAB" && test -s "$TV_AAB"
 
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
@@ -111,17 +110,24 @@ jobs:
           mkdir -p build/release-artifacts
           cp "$MOBILE_APK" "build/release-artifacts/CastFlow-1.0.0+1-Android-Mobile.apk"
           cp "$TV_APK" "build/release-artifacts/CastFlow-1.0.0+1-Android-TV.apk"
-          cp "$MOBILE_AAB" "build/release-artifacts/CastFlow-1.0.0+1-Android-Mobile.aab"
-          cp "$TV_AAB" "build/release-artifacts/CastFlow-1.0.0+1-Android-TV.aab"
           (
             cd build/release-artifacts
-            sha256sum CastFlow-* > SHA256SUMS
+            sha256sum CastFlow-*.apk > SHA256SUMS
           )
-          test "$(wc -l < build/release-artifacts/SHA256SUMS)" -eq 4
+          SOURCE_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          {
+            echo "git_commit=$SOURCE_SHA"
+            echo "version=1.0.0+1"
+            echo "mobile_package=com.castflow.castflow.mobile"
+            echo "tv_package=com.castflow.castflow.tv"
+          } > build/release-artifacts/BUILD_PROVENANCE.txt
+          test "$(wc -l < build/release-artifacts/SHA256SUMS)" -eq 2
+          test -z "$(find build/release-artifacts -type f -name '*.aab' -print -quit)"
       - name: Upload validated Android artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: castflow-android-${{ github.sha }}
+          name: castflow-android-${{ github.event.pull_request.head.sha || github.sha }}
           path: build/release-artifacts/
           if-no-files-found: error
           retention-days: 14
@@ -130,6 +136,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -159,3 +167,185 @@ jobs:
       - run: flutter pub get
       - name: Build iOS simulator with ReplayKit, VideoToolbox, and Runner bridge
         run: flutter build ios --simulator --debug
+      - name: Build unsigned iPhoneOS release app
+        run: |
+          flutter build ios --release --no-codesign --build-name=1.0.0 --build-number=1
+          test -d build/ios/iphoneos/Runner.app
+          test -d build/ios/iphoneos/Runner.app/PlugIns/BroadcastUploadExtension.appex
+      - name: Package and validate unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          STAGE_DIR="build/ipa-unsigned-stage"
+          ARTIFACT_DIR="build/ios-ipa-artifacts"
+          IPA="$ARTIFACT_DIR/CastFlow-1.0.0+1-iOS-unsigned.ipa"
+
+          rm -rf "$STAGE_DIR" "$ARTIFACT_DIR"
+          mkdir -p "$STAGE_DIR/Payload" "$ARTIFACT_DIR"
+          cp -R build/ios/iphoneos/Runner.app "$STAGE_DIR/Payload/Runner.app"
+
+          APP_PLIST="$STAGE_DIR/Payload/Runner.app/Info.plist"
+          EXT_PLIST="$STAGE_DIR/Payload/Runner.app/PlugIns/BroadcastUploadExtension.appex/Info.plist"
+
+          set_plist_string() {
+            local plist="$1"
+            local key="$2"
+            local value="$3"
+            if /usr/libexec/PlistBuddy -c "Print :$key" "$plist" >/dev/null 2>&1; then
+              /usr/libexec/PlistBuddy -c "Set :$key $value" "$plist"
+            else
+              /usr/libexec/PlistBuddy -c "Add :$key string $value" "$plist"
+            fi
+          }
+
+          set_plist_string "$APP_PLIST" CFBundleShortVersionString "1.0.0"
+          set_plist_string "$APP_PLIST" CFBundleVersion "1"
+          set_plist_string "$EXT_PLIST" CFBundleShortVersionString "1.0.0"
+          set_plist_string "$EXT_PLIST" CFBundleVersion "1"
+
+          (
+            cd "$STAGE_DIR"
+            zip -qry "../../$IPA" Payload
+          )
+
+          bash tools/validate_ios_ipa.sh "$IPA" unsigned
+          shasum -a 256 "$IPA" > "$IPA.sha256"
+          SOURCE_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          {
+            echo "git_commit=$SOURCE_SHA"
+            echo "version=1.0.0+1"
+            echo "bundle_id=com.castflow.castflow"
+            echo "extension_bundle_id=com.castflow.castflow.BroadcastUploadExtension"
+            echo "signing=unsigned"
+            echo "installability=not-claimed"
+          } > "$ARTIFACT_DIR/BUILD_PROVENANCE.txt"
+
+          test -s "$IPA"
+          test -s "$IPA.sha256"
+          test -s "$ARTIFACT_DIR/BUILD_PROVENANCE.txt"
+      - name: Upload validated unsigned iOS IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: castflow-ios-unsigned-${{ github.event.pull_request.head.sha || github.sha }}
+          path: build/ios-ipa-artifacts/
+          if-no-files-found: error
+          retention-days: 14
+
+
+  test-triplet-gate:
+    runs-on: ubuntu-latest
+    needs: [analyze-test, ios-replaykit-smoke]
+    steps:
+      - name: Download Android APK pair
+        uses: actions/download-artifact@v4
+        with:
+          name: castflow-android-${{ github.event.pull_request.head.sha || github.sha }}
+          path: triplet/android
+      - name: Download unsigned iOS IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: castflow-ios-unsigned-${{ github.event.pull_request.head.sha || github.sha }}
+          path: triplet/ios
+      - name: Enforce exact APK + APK TV + IPA triplet
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          MOBILE="triplet/android/CastFlow-1.0.0+1-Android-Mobile.apk"
+          TV="triplet/android/CastFlow-1.0.0+1-Android-TV.apk"
+          IPA="triplet/ios/CastFlow-1.0.0+1-iOS-unsigned.ipa"
+
+          test -s "$MOBILE"
+          test -s "$TV"
+          test -s "$IPA"
+          test -z "$(find triplet -type f -name '*.aab' -print -quit)"
+
+          grep -qx "git_commit=$SOURCE_SHA" triplet/android/BUILD_PROVENANCE.txt
+          grep -qx "git_commit=$SOURCE_SHA" triplet/ios/BUILD_PROVENANCE.txt
+          grep -qx "version=1.0.0+1" triplet/android/BUILD_PROVENANCE.txt
+          grep -qx "version=1.0.0+1" triplet/ios/BUILD_PROVENANCE.txt
+
+          mkdir -p release-test-triplet
+          cp "$MOBILE" release-test-triplet/
+          cp "$TV" release-test-triplet/
+          cp "$IPA" release-test-triplet/
+          (
+            cd release-test-triplet
+            sha256sum CastFlow-* > SHA256SUMS
+          )
+          test "$(wc -l < release-test-triplet/SHA256SUMS)" -eq 3
+          printf '%s\n'             "source_commit=$SOURCE_SHA"             "version=1.0.0+1"             "grade=developer-test-build"             "ios_signing=unsigned"             "ios_installability=not-claimed"             > release-test-triplet/BUILD_PROVENANCE.txt
+      - name: Upload exact three-package test bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: CastFlow-1.0.0+1-test-triplet-${{ github.event.pull_request.head.sha || github.sha }}
+          path: release-test-triplet/
+          if-no-files-found: error
+          retention-days: 14
+
+  publish-test-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: [test-triplet-gate]
+    steps:
+      - name: Download exact three-package test bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: CastFlow-1.0.0+1-test-triplet-${{ github.sha }}
+          path: release-test-triplet
+      - name: Verify release assets fail-closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s release-test-triplet/CastFlow-1.0.0+1-Android-Mobile.apk
+          test -s release-test-triplet/CastFlow-1.0.0+1-Android-TV.apk
+          test -s release-test-triplet/CastFlow-1.0.0+1-iOS-unsigned.ipa
+          test -s release-test-triplet/SHA256SUMS
+          test -s release-test-triplet/BUILD_PROVENANCE.txt
+          test -z "$(find release-test-triplet -type f -name '*.aab' -print -quit)"
+          grep -qx "source_commit=${{ github.sha }}" release-test-triplet/BUILD_PROVENANCE.txt
+          grep -qx "version=1.0.0+1" release-test-triplet/BUILD_PROVENANCE.txt
+          grep -qx "ios_signing=unsigned" release-test-triplet/BUILD_PROVENANCE.txt
+          test "$(wc -l < release-test-triplet/SHA256SUMS)" -eq 3
+          (
+            cd release-test-triplet
+            sha256sum -c SHA256SUMS
+          )
+      - name: Publish GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_NUMBER: ${{ github.run_number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v1.0.0-test.${RUN_NUMBER}"
+          TITLE="CastFlow 1.0.0+1 Developer Test Build"
+          NOTES_FILE="$(mktemp)"
+          cat > "$NOTES_FILE" <<EOF
+          Developer test build for user testing.
+
+          Source commit: ${SOURCE_SHA}
+          Version: 1.0.0+1
+
+          Included:
+          - Android Mobile APK
+          - Android TV APK
+          - iOS IPA (unsigned)
+
+          Important: the IPA is unsigned and is not claimed to be directly installable on a normal iPhone. This prerelease is not classified as Experimental/Beta/Golden/Complete until the corresponding runtime/device gates are proven.
+          EOF
+
+          gh release create "$TAG" \
+            release-test-triplet/CastFlow-1.0.0+1-Android-Mobile.apk \
+            release-test-triplet/CastFlow-1.0.0+1-Android-TV.apk \
+            release-test-triplet/CastFlow-1.0.0+1-iOS-unsigned.ipa \
+            release-test-triplet/SHA256SUMS \
+            release-test-triplet/BUILD_PROVENANCE.txt \
+            --repo "${{ github.repository }}" \
+            --target "$SOURCE_SHA" \
+            --title "$TITLE" \
+            --notes-file "$NOTES_FILE" \
+            --prerelease
