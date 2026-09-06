@@ -13,9 +13,7 @@ class CastFlowApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: <BlocProvider<dynamic>>[
-        BlocProvider<SenderPairingCubit>(
-          create: (_) => SenderPairingCubit(),
-        ),
+        BlocProvider<SenderPairingCubit>(create: (_) => SenderPairingCubit()),
         BlocProvider<ReceiverPairingCubit>(
           create: (_) => ReceiverPairingCubit(),
         ),
