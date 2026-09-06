@@ -63,10 +63,7 @@ class _ReceiverPairingView extends StatelessWidget {
     );
   }
 
-  Widget _buildPairingBody(
-    BuildContext context,
-    ReceiverPairingState state,
-  ) {
+  Widget _buildPairingBody(BuildContext context, ReceiverPairingState state) {
     if (state.status == ReceiverPairingStatus.starting) {
       return const CircularProgressIndicator();
     }
@@ -106,11 +103,7 @@ class _ReceiverPairingView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           color: Colors.white,
-          child: QrImageView(
-            data: qrData,
-            version: QrVersions.auto,
-            size: 260,
-          ),
+          child: QrImageView(data: qrData, version: QrVersions.auto, size: 260),
         ),
         const SizedBox(height: 16),
         const Text(
