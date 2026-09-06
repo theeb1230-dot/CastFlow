@@ -101,10 +101,14 @@ class SenderPairingCubit extends Cubit<SenderPairingState> {
       client = null;
       rtcSession = null;
 
-      _rtcStateSubscription = _rtcSession!.states.listen((PairingRtcState value) {
+      _rtcStateSubscription = _rtcSession!.states.listen((
+        PairingRtcState value,
+      ) {
         if (value == PairingRtcState.failed ||
             value == PairingRtcState.disconnected) {
-          unawaited(_handleRuntimeFailure('انقطع اتصال WebRTC مع جهاز الاستقبال.'));
+          unawaited(
+            _handleRuntimeFailure('انقطع اتصال WebRTC مع جهاز الاستقبال.'),
+          );
         }
       });
 
@@ -170,11 +174,12 @@ class SenderPairingCubit extends Cubit<SenderPairingState> {
     await _rtcSession!.startVideoSender(_encoder.packets);
 
     await _projectionInterruptionSubscription?.cancel();
-    _projectionInterruptionSubscription = _projectionSession.interruptions.listen(
-      (_) => unawaited(
-        _handleRuntimeFailure('تم إيقاف إذن مشاركة الشاشة من النظام.'),
-      ),
-    );
+    _projectionInterruptionSubscription = _projectionSession.interruptions
+        .listen(
+          (_) => unawaited(
+            _handleRuntimeFailure('تم إيقاف إذن مشاركة الشاشة من النظام.'),
+          ),
+        );
 
     emit(
       SenderPairingState(
