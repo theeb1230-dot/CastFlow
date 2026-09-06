@@ -19,8 +19,7 @@ class SignalingSessionBridge {
 
   Future<void> _messageTail = Future<void>.value();
   Future<void> _sendTail = Future<void>.value();
-  final List<Map<String, Object?>> _pendingLocalIce =
-      <Map<String, Object?>>[];
+  final List<Map<String, Object?>> _pendingLocalIce = <Map<String, Object?>>[];
   bool _localDescriptionSignaled = false;
   bool _disposed = false;
 
@@ -32,7 +31,9 @@ class SignalingSessionBridge {
       throw StateError('SignalingSessionBridge is disposed.');
     }
 
-    _messageSubscription = _transport.messages.listen((SignalingMessage message) {
+    _messageSubscription = _transport.messages.listen((
+      SignalingMessage message,
+    ) {
       _messageTail = _messageTail.then((_) => _handleMessage(message));
     });
     _iceSubscription = _rtc.localIceCandidates.listen(_handleLocalIce);
@@ -78,18 +79,16 @@ class SignalingSessionBridge {
     if (_pendingLocalIce.isEmpty) {
       return;
     }
-    final List<Map<String, Object?>> pending =
-        List<Map<String, Object?>>.from(_pendingLocalIce);
+    final List<Map<String, Object?>> pending = List<Map<String, Object?>>.from(
+      _pendingLocalIce,
+    );
     _pendingLocalIce.clear();
     for (final Map<String, Object?> payload in pending) {
       await _send(SignalingMessageType.iceCandidate, payload);
     }
   }
 
-  Future<void> _send(
-    SignalingMessageType type,
-    Map<String, Object?> payload,
-  ) {
+  Future<void> _send(SignalingMessageType type, Map<String, Object?> payload) {
     final Future<void> previous = _sendTail;
     final Future<void> operation = () async {
       try {
