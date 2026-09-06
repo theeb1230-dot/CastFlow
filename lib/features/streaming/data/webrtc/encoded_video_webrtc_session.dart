@@ -14,18 +14,14 @@ class EncodedVideoWebRtcSession {
     required WebRtcOrchestrator orchestrator,
     AndroidHardwareEncoder? encoder,
     Stream<EncodedVideoPacket>? senderPackets,
-  }) : assert(
-         encoder != null || senderPackets != null,
-         'Provide either an Android encoder or encoded sender packet stream.',
-       ),
-       _orchestrator = orchestrator,
-       _senderPackets = senderPackets ?? encoder!.packets;
+  }) : _orchestrator = orchestrator,
+       _senderPackets = senderPackets ?? encoder?.packets;
 
   static const String channelLabel = 'castflow-h264';
   static const String channelProtocol = 'castflow-h264-v1';
 
   final WebRtcOrchestrator _orchestrator;
-  final Stream<EncodedVideoPacket> _senderPackets;
+  final Stream<EncodedVideoPacket>? _senderPackets;
 
   final StreamController<EncodedVideoPacket> _remotePacketsController =
       StreamController<EncodedVideoPacket>.broadcast();
@@ -43,6 +39,13 @@ class EncodedVideoWebRtcSession {
       return;
     }
 
+    final Stream<EncodedVideoPacket>? senderPackets = _senderPackets;
+    if (senderPackets == null) {
+      throw StateError(
+        'EncodedVideoWebRtcSession requires a sender packet stream in sender mode.',
+      );
+    }
+
     final RTCDataChannel channel = await _orchestrator.createDataChannel(
       label: channelLabel,
       ordered: false,
@@ -55,7 +58,7 @@ class EncodedVideoWebRtcSession {
     final EncodedVideoPublisher publisher = EncodedVideoPublisher(
       transport: transport,
     );
-    publisher.bind(_senderPackets);
+    publisher.bind(senderPackets);
     _publisher = publisher;
   }
 
