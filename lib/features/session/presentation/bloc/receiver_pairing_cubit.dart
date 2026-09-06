@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../streaming/domain/entities/encoded_video_packet.dart';
 import '../../data/pairing/pairing_qr_codec.dart';
 import '../../data/pairing/pairing_rtc_session.dart';
 import '../../data/signaling/local_signaling_server.dart';
@@ -58,6 +59,14 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
   LocalSignalingServer? _server;
   PairingRtcSessionPort? _rtcSession;
   StreamSubscription<PairingRtcState>? _rtcStateSubscription;
+
+  Stream<EncodedVideoPacket> get remoteVideoPackets {
+    final PairingRtcSessionPort? session = _rtcSession;
+    if (session == null) {
+      throw StateError('Receiver WebRTC session is not active.');
+    }
+    return session.remoteVideoPackets;
+  }
 
   Future<void> start() async {
     if (state.status == ReceiverPairingStatus.starting ||
