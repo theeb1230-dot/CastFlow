@@ -78,6 +78,17 @@ Future<void> _waitUntil(
 }
 
 void main() {
+  test('rejects non-positive signaling client limits at runtime', () {
+    expect(
+      () => LocalSignalingServer(
+        sessionId: 'invalid-limit-session',
+        token: 'invalid-limit-token',
+        maxClients: 0,
+      ),
+      throwsArgumentError,
+    );
+  });
+
   test('reassembly memory stays bounded under incomplete frame stress', () {
     const EncodedVideoChunkCodec codec = EncodedVideoChunkCodec(
       maxPayloadBytes: 1,
