@@ -111,7 +111,7 @@ void main() {
     await rtc.dispose();
   });
 
-  test('forwards local and remote ICE candidates', () async {
+  test('buffers local ICE until the SDP offer is sent', () async {
     final _FakeTransport transport = _FakeTransport();
     final _FakeRtc rtc = _FakeRtc();
     final SignalingSessionBridge bridge = SignalingSessionBridge(
@@ -122,8 +122,41 @@ void main() {
     await bridge.start();
 
     rtc.iceController.add(const <String, Object?>{
-      'candidate': 'local-candidate',
+      'candidate': 'local-before-offer',
     });
+    await Future<void>.delayed(Duration.zero);
+    expect(transport.sent, isEmpty);
+
+    await bridge.createAndSendOffer();
+
+    expect(transport.sent, hasLength(2));
+    expect(transport.sent[0].$1, SignalingMessageType.offer);
+    expect(transport.sent[1].$1, SignalingMessageType.iceCandidate);
+    expect(transport.sent[1].$2['candidate'], 'local-before-offer');
+
+    await bridge.dispose();
+    await transport.dispose();
+    await rtc.dispose();
+  });
+
+  test('serializes remote offer before a following ICE candidate', () async {
+    final _FakeTransport transport = _FakeTransport();
+    final _FakeRtc rtc = _FakeRtc();
+    final SignalingSessionBridge bridge = SignalingSessionBridge(
+      transport: transport,
+      rtc: rtc,
+    );
+
+    await bridge.start();
+
+    transport.controller.add(
+      const SignalingMessage(
+        type: SignalingMessageType.offer,
+        sessionId: 's',
+        token: 't',
+        payload: <String, Object?>{'sdp': 'remote', 'type': 'offer'},
+      ),
+    );
     transport.controller.add(
       const SignalingMessage(
         type: SignalingMessageType.iceCandidate,
@@ -133,9 +166,11 @@ void main() {
       ),
     );
     await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
 
-    expect(transport.sent.single.$1, SignalingMessageType.iceCandidate);
+    expect(rtc.acceptedOffer?['sdp'], 'remote');
     expect(rtc.acceptedCandidate?['candidate'], 'remote-candidate');
+    expect(transport.sent.single.$1, SignalingMessageType.answer);
 
     await bridge.dispose();
     await transport.dispose();
