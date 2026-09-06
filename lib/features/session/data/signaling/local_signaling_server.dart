@@ -13,9 +13,9 @@ class LocalSignalingServer implements SignalingTransport {
     required this.token,
     InternetAddress? address,
     this.port = 0,
-    this.maxClients = 8,
+    int maxClients = 8,
     SignalingCodec codec = const SignalingCodec(),
-  }) : assert(maxClients > 0),
+  }) : maxClients = _validateMaxClients(maxClients),
        address = address ?? InternetAddress.anyIPv4,
        _codec = codec;
 
@@ -178,5 +178,16 @@ class LocalSignalingServer implements SignalingTransport {
       token: handshake.token,
       port: handshake.port,
     );
+  }
+
+  static int _validateMaxClients(int value) {
+    if (value <= 0) {
+      throw ArgumentError.value(
+        value,
+        'maxClients',
+        'must be greater than zero',
+      );
+    }
+    return value;
   }
 }
