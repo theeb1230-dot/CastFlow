@@ -42,32 +42,35 @@ class _FakeOrchestrator extends WebRtcOrchestrator {
 }
 
 void main() {
-  test('receiver pairing becomes connected only after real RTC state', () async {
-    final _FakeOrchestrator orchestrator = _FakeOrchestrator();
-    final _FakeTransport transport = _FakeTransport();
-    final PairingRtcSession session = PairingRtcSession(
-      orchestrator: orchestrator,
-    );
+  test(
+    'receiver pairing becomes connected only after real RTC state',
+    () async {
+      final _FakeOrchestrator orchestrator = _FakeOrchestrator();
+      final _FakeTransport transport = _FakeTransport();
+      final PairingRtcSession session = PairingRtcSession(
+        orchestrator: orchestrator,
+      );
 
-    final List<PairingRtcState> states = <PairingRtcState>[];
-    final StreamSubscription<PairingRtcState> subscription =
-        session.states.listen(states.add);
+      final List<PairingRtcState> states = <PairingRtcState>[];
+      final StreamSubscription<PairingRtcState> subscription = session.states
+          .listen(states.add);
 
-    await session.startReceiver(transport);
-    expect(states, contains(PairingRtcState.connecting));
-    expect(states, isNot(contains(PairingRtcState.connected)));
+      await session.startReceiver(transport);
+      expect(states, contains(PairingRtcState.connecting));
+      expect(states, isNot(contains(PairingRtcState.connected)));
 
-    orchestrator.stateController.add(
-      RTCPeerConnectionState.RTCPeerConnectionStateConnected,
-    );
-    await Future<void>.delayed(Duration.zero);
+      orchestrator.stateController.add(
+        RTCPeerConnectionState.RTCPeerConnectionStateConnected,
+      );
+      await Future<void>.delayed(Duration.zero);
 
-    expect(states.last, PairingRtcState.connected);
+      expect(states.last, PairingRtcState.connected);
 
-    await subscription.cancel();
-    await session.dispose();
-    await transport.dispose();
-  });
+      await subscription.cancel();
+      await session.dispose();
+      await transport.dispose();
+    },
+  );
 
   test('RTC failure is surfaced instead of reporting a false pair', () async {
     final _FakeOrchestrator orchestrator = _FakeOrchestrator();
