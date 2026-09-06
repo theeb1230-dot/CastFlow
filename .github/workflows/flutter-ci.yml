@@ -159,3 +159,47 @@ jobs:
       - run: flutter pub get
       - name: Build iOS simulator with ReplayKit, VideoToolbox, and Runner bridge
         run: flutter build ios --simulator --debug
+      - name: Build unsigned iPhoneOS release app
+        run: |
+          flutter build ios --release --no-codesign --build-name=1.0.0 --build-number=1
+          test -d build/ios/iphoneos/Runner.app
+          test -d build/ios/iphoneos/Runner.app/PlugIns/BroadcastUploadExtension.appex
+      - name: Package and validate unsigned IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          STAGE_DIR="build/ipa-unsigned-stage"
+          ARTIFACT_DIR="build/ios-ipa-artifacts"
+          IPA="$ARTIFACT_DIR/CastFlow-1.0.0+1-iOS-unsigned.ipa"
+
+          rm -rf "$STAGE_DIR" "$ARTIFACT_DIR"
+          mkdir -p "$STAGE_DIR/Payload" "$ARTIFACT_DIR"
+          cp -R build/ios/iphoneos/Runner.app "$STAGE_DIR/Payload/Runner.app"
+
+          (
+            cd "$STAGE_DIR"
+            zip -qry "../../$IPA" Payload
+          )
+
+          bash tools/validate_ios_ipa.sh "$IPA" unsigned
+          shasum -a 256 "$IPA" > "$IPA.sha256"
+          {
+            echo "git_commit=$(git rev-parse HEAD)"
+            echo "version=1.0.0+1"
+            echo "bundle_id=com.castflow.castflow"
+            echo "extension_bundle_id=com.castflow.castflow.BroadcastUploadExtension"
+            echo "signing=unsigned"
+            echo "installability=not-claimed"
+          } > "$ARTIFACT_DIR/BUILD_PROVENANCE.txt"
+
+          test -s "$IPA"
+          test -s "$IPA.sha256"
+          test -s "$ARTIFACT_DIR/BUILD_PROVENANCE.txt"
+      - name: Upload validated unsigned iOS IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: castflow-ios-unsigned-${{ github.sha }}
+          path: build/ios-ipa-artifacts/
+          if-no-files-found: error
+          retention-days: 14
