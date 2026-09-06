@@ -90,16 +90,21 @@ class SignalingSessionBridge {
     SignalingMessageType type,
     Map<String, Object?> payload,
   ) {
-    final Completer<void> completer = Completer<void>();
-    _sendTail = _sendTail.then((_) async {
+    final Future<void> previous = _sendTail;
+    final Future<void> operation = () async {
       try {
-        await _transport.send(type, payload);
-        completer.complete();
-      } catch (error, stackTrace) {
-        completer.completeError(error, stackTrace);
+        await previous;
+      } catch (_) {
+        // A previous send failure must not permanently poison the queue.
       }
-    });
-    return completer.future;
+      await _transport.send(type, payload);
+    }();
+
+    _sendTail = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace __) {},
+    );
+    return operation;
   }
 
   Future<void> _handleMessage(SignalingMessage message) async {
@@ -126,7 +131,7 @@ class SignalingSessionBridge {
         await _rtc.addRemoteCandidate(message.payload);
         return;
       case SignalingMessageType.bye:
-        await dispose();
+        unawaited(Future<void>.delayed(Duration.zero, dispose));
         return;
     }
   }
