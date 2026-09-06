@@ -83,14 +83,18 @@ class PairingRtcSession implements PairingRtcSessionPort {
     switch (state) {
       case RTCPeerConnectionState.RTCPeerConnectionStateConnected:
         _emit(PairingRtcState.connected);
+        break;
       case RTCPeerConnectionState.RTCPeerConnectionStateDisconnected:
       case RTCPeerConnectionState.RTCPeerConnectionStateClosed:
         _emit(PairingRtcState.disconnected);
+        break;
       case RTCPeerConnectionState.RTCPeerConnectionStateFailed:
         _emit(PairingRtcState.failed);
+        break;
       case RTCPeerConnectionState.RTCPeerConnectionStateNew:
       case RTCPeerConnectionState.RTCPeerConnectionStateConnecting:
         _emit(PairingRtcState.connecting);
+        break;
     }
   }
 
