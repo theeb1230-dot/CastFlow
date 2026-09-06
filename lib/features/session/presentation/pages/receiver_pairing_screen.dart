@@ -65,7 +65,10 @@ class _ReceiverPairingView extends StatelessWidget {
                     Text(
                       'تم الاتصال بجهاز الإرسال',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     SizedBox(height: 10),
                     Text(
