@@ -82,8 +82,10 @@ class _SenderPairingScreenState extends State<SenderPairingScreen> {
                         Icons.check_circle,
                         color: AppTheme.successGreen,
                       ),
-                      title: const Text('تم الاقتران محليًا'),
-                      subtitle: Text(state.peerName ?? 'CastFlow Receiver'),
+                      title: const Text('تم الاتصال فعليًا'),
+                      subtitle: Text(
+                        '${state.peerName ?? 'CastFlow Receiver'} • WebRTC متصل',
+                      ),
                     ),
                   if (state.status == SenderPairingStatus.failure)
                     Column(
