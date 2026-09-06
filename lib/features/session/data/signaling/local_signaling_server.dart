@@ -13,14 +13,17 @@ class LocalSignalingServer implements SignalingTransport {
     required this.token,
     InternetAddress? address,
     this.port = 0,
+    int maxClients = 8,
     SignalingCodec codec = const SignalingCodec(),
-  }) : address = address ?? InternetAddress.anyIPv4,
+  }) : maxClients = _validateMaxClients(maxClients),
+       address = address ?? InternetAddress.anyIPv4,
        _codec = codec;
 
   final String sessionId;
   final String token;
   final InternetAddress address;
   final int port;
+  final int maxClients;
   final SignalingCodec _codec;
 
   final StreamController<SignalingMessage> _messagesController =
@@ -32,6 +35,9 @@ class LocalSignalingServer implements SignalingTransport {
 
   @override
   Stream<SignalingMessage> get messages => _messagesController.stream;
+
+  int get connectedClientCount => _clients.length;
+  int get authenticatedClientCount => _authenticatedClients.length;
 
   int get boundPort {
     final ServerSocket? server = _server;
@@ -91,6 +97,11 @@ class LocalSignalingServer implements SignalingTransport {
   }
 
   void _acceptClient(Socket socket) {
+    if (_clients.length >= maxClients) {
+      socket.destroy();
+      return;
+    }
+
     _clients.add(socket);
 
     socket
@@ -167,5 +178,16 @@ class LocalSignalingServer implements SignalingTransport {
       token: handshake.token,
       port: handshake.port,
     );
+  }
+
+  static int _validateMaxClients(int value) {
+    if (value <= 0) {
+      throw ArgumentError.value(
+        value,
+        'maxClients',
+        'must be greater than zero',
+      );
+    }
+    return value;
   }
 }
