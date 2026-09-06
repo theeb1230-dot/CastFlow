@@ -24,15 +24,13 @@ class _SenderPairingScreenState extends State<SenderPairingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<SenderPairingCubit>(
-      create: (_) => SenderPairingCubit(),
-      child: BlocConsumer<SenderPairingCubit, SenderPairingState>(
+    return BlocConsumer<SenderPairingCubit, SenderPairingState>(
         listener: (context, state) {
           if (state.status == SenderPairingStatus.failure) {
             _handledBarcode = false;
             _scannerController.start();
           }
-          if (state.status == SenderPairingStatus.paired) {
+          if (state.status == SenderPairingStatus.streaming) {
             _scannerController.stop();
           }
         },
@@ -74,17 +72,26 @@ class _SenderPairingScreenState extends State<SenderPairingScreen> {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  if (state.status == SenderPairingStatus.connecting)
+                  if (state.status == SenderPairingStatus.connecting ||
+                      state.status == SenderPairingStatus.startingStream)
                     const LinearProgressIndicator(),
+                  if (state.status == SenderPairingStatus.startingStream)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 10),
+                      child: Text(
+                        'وافق على إذن مشاركة الشاشة لبدء البث.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   if (state.status == SenderPairingStatus.paired)
                     ListTile(
                       leading: const Icon(
                         Icons.check_circle,
                         color: AppTheme.successGreen,
                       ),
-                      title: const Text('تم الاتصال فعليًا'),
+                      title: const Text('يتم بث الشاشة الآن'),
                       subtitle: Text(
-                        '${state.peerName ?? 'CastFlow Receiver'} • WebRTC متصل',
+                        '${state.peerName ?? 'CastFlow Receiver'} • WebRTC + H.264',
                       ),
                     ),
                   if (state.status == SenderPairingStatus.failure)
@@ -97,11 +104,19 @@ class _SenderPairingScreenState extends State<SenderPairingScreen> {
                         const SizedBox(height: 10),
                         FilledButton(
                           onPressed: () async {
+                            if (state.peerName != null) {
+                              await context.read<SenderPairingCubit>().retryStreaming();
+                              return;
+                            }
                             await context.read<SenderPairingCubit>().reset();
                             _handledBarcode = false;
                             await _scannerController.start();
                           },
-                          child: const Text('المحاولة مجددًا'),
+                          child: Text(
+                            state.peerName != null
+                                ? 'إعادة بدء البث'
+                                : 'المحاولة مجددًا',
+                          ),
                         ),
                       ],
                     ),
@@ -116,7 +131,6 @@ class _SenderPairingScreenState extends State<SenderPairingScreen> {
             ),
           );
         },
-      ),
     );
   }
 }
