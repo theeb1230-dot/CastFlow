@@ -23,9 +23,11 @@ jobs:
         run: |
           flutter create --platforms=android,ios --org com.castflow .
           rm -f test/widget_test.dart
+          cp tools/android_app_build.gradle.kts android/app/build.gradle.kts
       - name: Verify platform configuration
         run: |
-          grep -q "android.intent.category.LEANBACK_LAUNCHER" android/app/src/main/AndroidManifest.xml
+          grep -q "android.intent.category.LEANBACK_LAUNCHER" android/app/src/tv/AndroidManifest.xml
+          ! grep -q "android.intent.category.LEANBACK_LAUNCHER" android/app/src/mobile/AndroidManifest.xml
           grep -q "android.permission.CHANGE_WIFI_MULTICAST_STATE" android/app/src/main/AndroidManifest.xml
           grep -q "android.permission.NEARBY_WIFI_DEVICES" android/app/src/main/AndroidManifest.xml
           grep -q "android.permission.ACCESS_FINE_LOCATION" android/app/src/main/AndroidManifest.xml
@@ -42,6 +44,8 @@ jobs:
           grep -q 'android:foregroundServiceType="mediaProjection"' android/app/src/main/AndroidManifest.xml
           grep -q "NSLocalNetworkUsageDescription" ios/Runner/Info.plist
           grep -q "_castflow._tcp" ios/Runner/Info.plist
+          grep -q 'isMinifyEnabled = true' android/app/build.gradle.kts
+          grep -q 'isShrinkResources = true' android/app/build.gradle.kts
       - run: flutter pub get
       - name: Verify formatting
         run: |
@@ -54,7 +58,73 @@ jobs:
       - name: Performance regression gate
         run: flutter test test/performance --reporter expanded
       - name: Android native compile smoke test
-        run: flutter build apk --debug
+        run: flutter build apk --debug --flavor mobile
+      - name: Build Android Mobile and TV release artifacts
+        run: |
+          flutter build apk --release --flavor mobile --dart-define=CASTFLOW_TARGET=mobile
+          flutter build apk --release --flavor tv --dart-define=CASTFLOW_TARGET=tv
+          flutter build appbundle --release --flavor mobile --dart-define=CASTFLOW_TARGET=mobile
+          flutter build appbundle --release --flavor tv --dart-define=CASTFLOW_TARGET=tv
+      - name: Validate Android release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          MOBILE_APK="$(find build/app/outputs/flutter-apk -type f -name '*mobile-release.apk' -print -quit)"
+          TV_APK="$(find build/app/outputs/flutter-apk -type f -name '*tv-release.apk' -print -quit)"
+          MOBILE_AAB="$(find build/app/outputs/bundle -type f -name '*mobile-release.aab' -print -quit)"
+          TV_AAB="$(find build/app/outputs/bundle -type f -name '*tv-release.aab' -print -quit)"
+
+          test -n "$MOBILE_APK" && test -s "$MOBILE_APK"
+          test -n "$TV_APK" && test -s "$TV_APK"
+          test -n "$MOBILE_AAB" && test -s "$MOBILE_AAB"
+          test -n "$TV_AAB" && test -s "$TV_AAB"
+
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$AAPT"
+          test -x "$APKSIGNER"
+
+          MOBILE_BADGING="$("$AAPT" dump badging "$MOBILE_APK")"
+          TV_BADGING="$("$AAPT" dump badging "$TV_APK")"
+
+          grep -q "package: name='com.castflow.castflow.mobile'" <<<"$MOBILE_BADGING"
+          grep -q "package: name='com.castflow.castflow.tv'" <<<"$TV_BADGING"
+          grep -q "launchable-activity:" <<<"$MOBILE_BADGING"
+          ! grep -q "leanback-launchable-activity:" <<<"$MOBILE_BADGING"
+          grep -q "leanback-launchable-activity:" <<<"$TV_BADGING"
+          grep -q "uses-feature: name='android.software.leanback'" <<<"$TV_BADGING"
+
+          MOBILE_VERSION_CODE="$(sed -n "s/.*versionCode='\([^']*\)'.*/\1/p" <<<"$MOBILE_BADGING" | head -n1)"
+          TV_VERSION_CODE="$(sed -n "s/.*versionCode='\([^']*\)'.*/\1/p" <<<"$TV_BADGING" | head -n1)"
+          MOBILE_VERSION_NAME="$(sed -n "s/.*versionName='\([^']*\)'.*/\1/p" <<<"$MOBILE_BADGING" | head -n1)"
+          TV_VERSION_NAME="$(sed -n "s/.*versionName='\([^']*\)'.*/\1/p" <<<"$TV_BADGING" | head -n1)"
+
+          test "$MOBILE_VERSION_CODE" = "$TV_VERSION_CODE"
+          test "$MOBILE_VERSION_NAME" = "$TV_VERSION_NAME"
+          test "$MOBILE_VERSION_NAME" = "1.0.0"
+          test "$MOBILE_VERSION_CODE" = "1"
+
+          "$APKSIGNER" verify --verbose "$MOBILE_APK"
+          "$APKSIGNER" verify --verbose "$TV_APK"
+
+          mkdir -p build/release-artifacts
+          cp "$MOBILE_APK" "build/release-artifacts/CastFlow-1.0.0+1-Android-Mobile.apk"
+          cp "$TV_APK" "build/release-artifacts/CastFlow-1.0.0+1-Android-TV.apk"
+          cp "$MOBILE_AAB" "build/release-artifacts/CastFlow-1.0.0+1-Android-Mobile.aab"
+          cp "$TV_AAB" "build/release-artifacts/CastFlow-1.0.0+1-Android-TV.aab"
+          (
+            cd build/release-artifacts
+            sha256sum CastFlow-* > SHA256SUMS
+          )
+          test "$(wc -l < build/release-artifacts/SHA256SUMS)" -eq 4
+      - name: Upload validated Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: castflow-android-${{ github.sha }}
+          path: build/release-artifacts/
+          if-no-files-found: error
+          retention-days: 14
 
   ios-replaykit-smoke:
     runs-on: macos-latest
