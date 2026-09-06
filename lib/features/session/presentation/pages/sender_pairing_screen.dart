@@ -25,112 +25,114 @@ class _SenderPairingScreenState extends State<SenderPairingScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<SenderPairingCubit, SenderPairingState>(
-        listener: (context, state) {
-          if (state.status == SenderPairingStatus.failure) {
-            _handledBarcode = false;
-            _scannerController.start();
-          }
-          if (state.status == SenderPairingStatus.streaming) {
-            _scannerController.stop();
-          }
-        },
-        builder: (context, state) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('إرسال الشاشة')),
-            body: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: <Widget>[
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: MobileScanner(
-                        controller: _scannerController,
-                        onDetect: (BarcodeCapture capture) {
-                          if (_handledBarcode) {
-                            return;
-                          }
+      listener: (context, state) {
+        if (state.status == SenderPairingStatus.failure) {
+          _handledBarcode = false;
+          _scannerController.start();
+        }
+        if (state.status == SenderPairingStatus.streaming) {
+          _scannerController.stop();
+        }
+      },
+      builder: (context, state) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('إرسال الشاشة')),
+          body: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: <Widget>[
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: MobileScanner(
+                      controller: _scannerController,
+                      onDetect: (BarcodeCapture capture) {
+                        if (_handledBarcode) {
+                          return;
+                        }
 
-                          String? value;
-                          for (final Barcode barcode in capture.barcodes) {
-                            final String? rawValue = barcode.rawValue;
-                            if (rawValue != null && rawValue.isNotEmpty) {
-                              value = rawValue;
-                              break;
-                            }
+                        String? value;
+                        for (final Barcode barcode in capture.barcodes) {
+                          final String? rawValue = barcode.rawValue;
+                          if (rawValue != null && rawValue.isNotEmpty) {
+                            value = rawValue;
+                            break;
                           }
+                        }
 
-                          if (value == null) {
-                            return;
-                          }
+                        if (value == null) {
+                          return;
+                        }
 
-                          _handledBarcode = true;
-                          _scannerController.stop();
-                          context.read<SenderPairingCubit>().pair(value);
-                        },
-                      ),
+                        _handledBarcode = true;
+                        _scannerController.stop();
+                        context.read<SenderPairingCubit>().pair(value);
+                      },
                     ),
                   ),
-                  const SizedBox(height: 18),
-                  if (state.status == SenderPairingStatus.connecting ||
-                      state.status == SenderPairingStatus.startingStream)
-                    const LinearProgressIndicator(),
-                  if (state.status == SenderPairingStatus.startingStream)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 10),
-                      child: Text(
-                        'وافق على إذن مشاركة الشاشة لبدء البث.',
+                ),
+                const SizedBox(height: 18),
+                if (state.status == SenderPairingStatus.connecting ||
+                    state.status == SenderPairingStatus.startingStream)
+                  const LinearProgressIndicator(),
+                if (state.status == SenderPairingStatus.startingStream)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: Text(
+                      'وافق على إذن مشاركة الشاشة لبدء البث.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                if (state.status == SenderPairingStatus.streaming)
+                  ListTile(
+                    leading: const Icon(
+                      Icons.check_circle,
+                      color: AppTheme.successGreen,
+                    ),
+                    title: const Text('يتم بث الشاشة الآن'),
+                    subtitle: Text(
+                      '\${state.peerName ?? 'CastFlow Receiver'} • WebRTC + H.264',
+                    ),
+                  ),
+                if (state.status == SenderPairingStatus.failure)
+                  Column(
+                    children: <Widget>[
+                      Text(
+                        state.errorMessage ?? 'تعذر الاقتران',
                         textAlign: TextAlign.center,
                       ),
-                    ),
-                  if (state.status == SenderPairingStatus.paired)
-                    ListTile(
-                      leading: const Icon(
-                        Icons.check_circle,
-                        color: AppTheme.successGreen,
-                      ),
-                      title: const Text('يتم بث الشاشة الآن'),
-                      subtitle: Text(
-                        '${state.peerName ?? 'CastFlow Receiver'} • WebRTC + H.264',
-                      ),
-                    ),
-                  if (state.status == SenderPairingStatus.failure)
-                    Column(
-                      children: <Widget>[
-                        Text(
-                          state.errorMessage ?? 'تعذر الاقتران',
-                          textAlign: TextAlign.center,
+                      const SizedBox(height: 10),
+                      FilledButton(
+                        onPressed: () async {
+                          if (state.peerName != null) {
+                            await context
+                                .read<SenderPairingCubit>()
+                                .retryStreaming();
+                            return;
+                          }
+                          await context.read<SenderPairingCubit>().reset();
+                          _handledBarcode = false;
+                          await _scannerController.start();
+                        },
+                        child: Text(
+                          state.peerName != null
+                              ? 'إعادة بدء البث'
+                              : 'المحاولة مجددًا',
                         ),
-                        const SizedBox(height: 10),
-                        FilledButton(
-                          onPressed: () async {
-                            if (state.peerName != null) {
-                              await context.read<SenderPairingCubit>().retryStreaming();
-                              return;
-                            }
-                            await context.read<SenderPairingCubit>().reset();
-                            _handledBarcode = false;
-                            await _scannerController.start();
-                          },
-                          child: Text(
-                            state.peerName != null
-                                ? 'إعادة بدء البث'
-                                : 'المحاولة مجددًا',
-                          ),
-                        ),
-                      ],
-                    ),
-                  if (state.status == SenderPairingStatus.idle)
-                    const Text(
-                      'وجّه الكاميرا إلى رمز QR الظاهر على جهاز الاستقبال',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppTheme.primaryCyan),
-                    ),
-                ],
-              ),
+                      ),
+                    ],
+                  ),
+                if (state.status == SenderPairingStatus.idle)
+                  const Text(
+                    'وجّه الكاميرا إلى رمز QR الظاهر على جهاز الاستقبال',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppTheme.primaryCyan),
+                  ),
+              ],
             ),
-          );
-        },
+          ),
+        );
+      },
     );
   }
 }
