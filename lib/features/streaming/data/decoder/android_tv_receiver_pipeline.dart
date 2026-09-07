@@ -23,7 +23,7 @@ class AndroidTvReceiverPipeline {
     void Function()? onFirstFrameRendered,
     void Function(Object error, StackTrace stackTrace)? onRenderError,
   }) async {
-    if (_disposed) throw StateError('Receiver pipeline is disposed.');
+    if (_disposed) {\n      throw StateError('Receiver pipeline is disposed.');\n    }
     if (_subscription != null) {
       throw StateError('Receiver pipeline is already active.');
     }
@@ -59,7 +59,7 @@ class AndroidTvReceiverPipeline {
   }
 
   Future<void> dispose() async {
-    if (_disposed) return;
+    if (_disposed) {\n      return;\n    }
     _disposed = true;
     await stop();
   }
