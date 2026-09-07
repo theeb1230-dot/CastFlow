@@ -14,6 +14,8 @@ class AndroidTvReceiverSurface extends StatefulWidget {
     required this.width,
     required this.height,
     this.onExit,
+    this.onFirstFrameRendered,
+    this.onRenderError,
     super.key,
   });
 
@@ -21,6 +23,8 @@ class AndroidTvReceiverSurface extends StatefulWidget {
   final int width;
   final int height;
   final VoidCallback? onExit;
+  final VoidCallback? onFirstFrameRendered;
+  final void Function(Object error)? onRenderError;
 
   @override
   State<AndroidTvReceiverSurface> createState() =>
@@ -47,11 +51,16 @@ class _AndroidTvReceiverSurfaceState extends State<AndroidTvReceiverSurface> {
         packets: widget.packets,
         width: widget.width,
         height: widget.height,
+        onFirstFrameRendered: widget.onFirstFrameRendered,
+        onRenderError: (Object error, StackTrace _) {
+          widget.onRenderError?.call(error);
+        },
       );
       if (mounted) {
         setState(() => _textureId = textureId);
       }
     } catch (error) {
+      widget.onRenderError?.call(error);
       if (mounted) {
         setState(() => _error = error);
       }
