@@ -1,83 +1,41 @@
 # Autonomous Development State
 
-Last updated: 2026-09-07 13:00 Asia/Riyadh
+Last updated: 2026-09-07 15:20 Asia/Riyadh
 Active PR: #31 `Fix first-frame runtime proof and publish 1.0.3+4`
 Working branch: `fix-first-frame-runtime-ack`
-Base main commit: `1a8c63b79f2bc26ce6ce122c0b4d7044a3e3a92b`
-PR head before this handoff update: `c82dc23c1c5bda7b7bad21775044d6238c5e70fc`
+Current head: `c6eafc4826e438b22dfe2191137dea3536241ef3`
+Base main: `1a8c63b79f2bc26ce6ce122c0b4d7044a3e3a92b`
 Target version: `1.0.3+4`
 
 ## Source of truth
+GitHub main, PR state, commits, workflow logs and Releases override this handoff when they differ.
 
-This document is a handoff aid only. GitHub main/branches/PRs/CI/logs/releases are authoritative when they differ from this file.
+## Current run
+- PR #31 remains the only open PR and main remains at 1.0.2+3.
+- Previous CI #156 on head 80ddbbe5 passed the full Android/iOS/triplet gates.
+- Review found the first-frame proof was too weak: successful decoder input is not proof of rendered MediaCodec output.
+- HardwareDecoderBridge now returns true only after a non-codec-config, non-EOS output buffer is released for rendering to the Surface.
+- The receiver pipeline was kept buildable and explicitly excludes codec-config input from first-frame candidacy while the Dart bridge result wiring is completed.
+- Attempts to finish the Dart MethodChannel return-value wiring were blocked by the available write-safety layer during this run.
+- CI run #34120994043 on c6eafc failed the formatting gate before analyze/tests. iOS smoke continued independently.
+- Do not merge PR #31 in this state and do not publish 1.0.3+4 from this head.
 
-## Work completed in this run
+## Release readiness
+Formal grade: Not yet Experimental.
+Latest published Developer Test: v1.0.2-test.151.
 
-- Reviewed main, all open PRs, branch inventory, recent commits, latest Releases, CI workflow and critical Android/iOS runtime files.
-- Confirmed there were no open PRs at the start and the latest published triplet was `v1.0.2-test.151`.
-- Found that the sender declared `streaming` before the Android TV receiver proved that any H.264 frame was successfully pushed into MediaCodec.
-- Found that `AndroidTvReceiverPipeline` swallowed renderer errors.
-- Found that video-start failure after MediaProjection/encoder startup could leave capture resources active.
-- Added `videoReady` / `videoFailed` runtime signaling.
-- Sender now waits for receiver first-frame proof before declaring streaming.
-- TV acknowledges exactly once after the first successful renderer push and reports render failures.
-- Startup failure now stops encoder and MediaProjection before surfacing the error.
-- Added regression tests preventing false first-frame readiness.
-- Added this persistent autonomous-development handoff file.
-- Bumped release target to `1.0.3+4` and updated Android/iOS triplet validation and publishing workflow.
-
-## PR / CI
-
-PR #31 is the only open PR.
-
-CI run #155 on head `c82dc23c1c5bda7b7bad21775044d6238c5e70fc` passed:
-- formatting;
-- flutter analyze;
-- flutter test;
-- stress/reconnect/resource gates;
-- performance regression gate;
-- Android native compile;
-- Android Mobile + Android TV release APK builds and validation;
-- iOS ReplayKit/VideoToolbox simulator build;
-- unsigned iPhoneOS app + IPA structure validation;
-- exact APK + APK-TV + IPA triplet gate.
-
-The exact validated artifacts exist for this head:
-- `castflow-android-c82dc23c1c5bda7b7bad21775044d6238c5e70fc`;
-- `castflow-ios-unsigned-c82dc23c1c5bda7b7bad21775044d6238c5e70fc`;
-- `CastFlow-1.0.3+4-test-triplet-c82dc23c1c5bda7b7bad21775044d6238c5e70fc`.
-
-PR #31 remains GitHub mergeable/clean, but direct merge and a non-force fast-forward of `main` were blocked by the available write-safety layer in this run. No merge conflict or CI failure is present.
-
-## Current release readiness
-
-Current published Developer Test: `v1.0.2-test.151`.
-
-Formal grade remains **Not yet Experimental** because physical-device video rendering has not yet been proven after the new first-frame gate.
-
-Evidence established:
-- Android TV physical installation/launch and QR pairing were exercised by the user.
-- Real WebRTC control connection between Android phone and Android TV was observed on physical devices.
-- CI packaging gates produce Android Mobile APK + Android TV APK + unsigned iOS IPA from one commit/version.
-- ReplayKit extension is embedded and structurally validated in the unsigned IPA.
-
-Still missing:
-- physical evidence that MediaProjection frames actually appear on Android TV with 1.0.3+4;
-- persistent casting after leaving the sender page verified on device;
-- iOS physical-device ReplayKit runtime validation;
-- signed/provisioned installable IPA for Beta or higher;
-- complete reconnect/interruption/background/device matrix evidence.
-
-## Release rules
-
-No GitHub Release may be published unless Android Mobile APK + Android TV APK + iOS IPA are built from the same commit/version and the triplet gate passes. Unsigned IPA must remain explicitly marked UNSIGNED and not directly installable.
+Missing evidence:
+- exact MediaCodec output result wired into Dart first-frame acknowledgement;
+- green full CI/triplet on the corrected head;
+- physical Android phone -> Android TV visible-frame proof;
+- iOS physical ReplayKit runtime proof and signing/provisioning for installability;
+- reconnect/interruption/background device-matrix evidence.
 
 ## Next-run objectives
-
-1. Re-check PR #31 head and CI; merge immediately if the write path is permitted. Do not open another PR first.
-2. After merge, verify the main push publishes the exact `1.0.3+4` Developer Test Release with Android Mobile APK + Android TV APK + unsigned iOS IPA + SHA256SUMS + BUILD_PROVENANCE from the same commit.
-3. Verify the published release target, asset integrity and version parity.
-4. Consume physical-device feedback for `1.0.3+4`; require proof that the phone screen appears on Android TV and remains active after leaving the QR page.
-5. If first-frame rendering succeeds, add receiver frame counters and end-to-end startup-latency telemetry, connected to RTT/jitter/packet-loss/ABR.
-6. Harden media reconnect so temporary Wi-Fi interruption can recover the video transport and re-establish first-frame readiness without a fresh QR scan where feasible.
-7. Continue iOS ReplayKit runtime sender integration and signing/provisioning readiness without claiming installability until proven.
+1. Finish Dart wiring so videoReady is emitted only when HardwareDecoderBridge returns rendered=true.
+2. Add regression tests: codec-config/input-only => no ack; first actual decoder output => exactly one ack; decoder failure => videoFailed.
+3. Run dart format, analyze, unit/stress/performance gates and Android native compile.
+4. Require Android Mobile APK + Android TV APK + unsigned iOS IPA triplet from the same corrected commit/version.
+5. Merge PR #31 only after all required checks are green.
+6. Verify the main push publishes 1.0.3+4 with SHA256SUMS and BUILD_PROVENANCE.
+7. Then require physical-device visible-frame and persistence evidence before Experimental.
