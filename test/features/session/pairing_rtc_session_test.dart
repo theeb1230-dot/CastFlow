@@ -10,6 +10,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 class _FakeTransport implements SignalingTransport {
   final StreamController<SignalingMessage> controller =
       StreamController<SignalingMessage>.broadcast();
+  final List<SignalingMessageType> sentTypes = <SignalingMessageType>[];
 
   @override
   Stream<SignalingMessage> get messages => controller.stream;
@@ -18,7 +19,9 @@ class _FakeTransport implements SignalingTransport {
   Future<void> send(
     SignalingMessageType type,
     Map<String, Object?> payload,
-  ) async {}
+  ) async {
+    sentTypes.add(type);
+  }
 
   Future<void> dispose() => controller.close();
 }
@@ -71,6 +74,51 @@ void main() {
       await transport.dispose();
     },
   );
+
+
+  test('receiver video heartbeat is exposed to the sender session', () async {
+    final _FakeOrchestrator orchestrator = _FakeOrchestrator();
+    final _FakeTransport transport = _FakeTransport();
+    final PairingRtcSession session = PairingRtcSession(
+      orchestrator: orchestrator,
+    );
+
+    await session.startReceiver(transport);
+    final Future<void> heartbeat = session.videoHeartbeats.first;
+
+    transport.controller.add(
+      const SignalingMessage(
+        type: SignalingMessageType.videoHeartbeat,
+        sessionId: 'session',
+        token: 'token',
+        payload: <String, Object?>{'state': 'rendering'},
+      ),
+    );
+
+    await heartbeat;
+
+    await session.dispose();
+    await transport.dispose();
+  });
+
+  test('receiver can send an explicit video heartbeat', () async {
+    final _FakeOrchestrator orchestrator = _FakeOrchestrator();
+    final _FakeTransport transport = _FakeTransport();
+    final PairingRtcSession session = PairingRtcSession(
+      orchestrator: orchestrator,
+    );
+
+    await session.startReceiver(transport);
+    await session.notifyVideoHeartbeat();
+
+    expect(
+      transport.sentTypes,
+      contains(SignalingMessageType.videoHeartbeat),
+    );
+
+    await session.dispose();
+    await transport.dispose();
+  });
 
   test('RTC failure is surfaced instead of reporting a false pair', () async {
     final _FakeOrchestrator orchestrator = _FakeOrchestrator();
