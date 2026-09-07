@@ -169,24 +169,34 @@ class SenderPairingCubit extends Cubit<SenderPairingState> {
   }
 
   Future<void> _startStreaming(String peerName) async {
-    await _projectionSession.requestAndStart();
-    await _encoder.start(StreamingProfile.balanced);
-    await _rtcSession!.startVideoSender(_encoder.packets);
+    try {
+      await _projectionSession.requestAndStart();
+      await _encoder.start(StreamingProfile.balanced);
+      await _rtcSession!.startVideoSender(_encoder.packets);
 
-    await _projectionInterruptionSubscription?.cancel();
-    _projectionInterruptionSubscription = _projectionSession.interruptions
-        .listen(
-          (_) => unawaited(
-            _handleRuntimeFailure('تم إيقاف إذن مشاركة الشاشة من النظام.'),
-          ),
-        );
+      await _projectionInterruptionSubscription?.cancel();
+      _projectionInterruptionSubscription = _projectionSession.interruptions
+          .listen(
+            (_) => unawaited(
+              _handleRuntimeFailure('تم إيقاف إذن مشاركة الشاشة من النظام.'),
+            ),
+          );
 
-    emit(
-      SenderPairingState(
-        status: SenderPairingStatus.streaming,
-        peerName: peerName,
-      ),
-    );
+      emit(
+        SenderPairingState(
+          status: SenderPairingStatus.streaming,
+          peerName: peerName,
+        ),
+      );
+    } on TimeoutException {
+      await _stopCaptureOnly();
+      throw StateError(
+        'لم يؤكد جهاز الاستقبال تشغيل أول إطار فيديو. أعد المحاولة وتأكد أن شاشة الاستقبال مفتوحة.',
+      );
+    } catch (_) {
+      await _stopCaptureOnly();
+      rethrow;
+    }
   }
 
   Future<void> _handleRuntimeFailure(String message) async {
