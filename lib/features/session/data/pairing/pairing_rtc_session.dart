@@ -17,6 +17,8 @@ abstract interface class PairingRtcSessionPort {
 
   Stream<EncodedVideoPacket> get remoteVideoPackets;
 
+  Stream<void> get videoHeartbeats;
+
   Future<void> startSender(SignalingTransport transport);
 
   Future<void> startReceiver(SignalingTransport transport);
@@ -27,6 +29,8 @@ abstract interface class PairingRtcSessionPort {
   });
 
   Future<void> notifyVideoReady();
+
+  Future<void> notifyVideoHeartbeat();
 
   Future<void> notifyVideoFailed(String reason);
 
@@ -43,10 +47,13 @@ class PairingRtcSession implements PairingRtcSessionPort {
   final WebRtcOrchestrator _orchestrator;
   final StreamController<PairingRtcState> _stateController =
       StreamController<PairingRtcState>.broadcast();
+  final StreamController<void> _videoHeartbeatController =
+      StreamController<void>.broadcast();
 
   SignalingSessionBridge? _bridge;
   SignalingTransport? _transport;
   StreamSubscription<RTCPeerConnectionState>? _connectionSubscription;
+  StreamSubscription<SignalingMessage>? _videoHeartbeatSubscription;
   EncodedVideoWebRtcSession? _videoSession;
   PairingRtcState _state = PairingRtcState.idle;
   bool _disposed = false;
@@ -55,6 +62,9 @@ class PairingRtcSession implements PairingRtcSessionPort {
   Stream<PairingRtcState> get states => _stateController.stream;
 
   @override
+  @override
+  Stream<void> get videoHeartbeats => _videoHeartbeatController.stream;
+
   Stream<EncodedVideoPacket> get remoteVideoPackets {
     final EncodedVideoWebRtcSession? session = _videoSession;
     if (session == null) {
@@ -139,6 +149,15 @@ class PairingRtcSession implements PairingRtcSessionPort {
   }
 
   @override
+  Future<void> notifyVideoHeartbeat() async {
+    final SignalingTransport transport =
+        _transport ?? (throw StateError('Signaling transport is not active.'));
+    await transport.send(SignalingMessageType.videoHeartbeat, <String, Object?>{
+      'state': 'rendering',
+    });
+  }
+
+  @override
   Future<void> notifyVideoFailed(String reason) async {
     final SignalingTransport transport =
         _transport ?? (throw StateError('Signaling transport is not active.'));
@@ -156,6 +175,16 @@ class PairingRtcSession implements PairingRtcSessionPort {
     }
 
     _transport = transport;
+    _videoHeartbeatSubscription = transport.messages
+        .where(
+          (SignalingMessage message) =>
+              message.type == SignalingMessageType.videoHeartbeat,
+        )
+        .listen((_) {
+          if (!_videoHeartbeatController.isClosed) {
+            _videoHeartbeatController.add(null);
+          }
+        });
     _emit(PairingRtcState.connecting);
     await _orchestrator.initialize();
 
@@ -207,6 +236,8 @@ class PairingRtcSession implements PairingRtcSessionPort {
     _disposed = true;
     await _connectionSubscription?.cancel();
     _connectionSubscription = null;
+    await _videoHeartbeatSubscription?.cancel();
+    _videoHeartbeatSubscription = null;
     await _videoSession?.dispose();
     _videoSession = null;
     await _bridge?.dispose();
@@ -214,5 +245,6 @@ class PairingRtcSession implements PairingRtcSessionPort {
     _transport = null;
     await _orchestrator.dispose();
     await _stateController.close();
+    await _videoHeartbeatController.close();
   }
 }
