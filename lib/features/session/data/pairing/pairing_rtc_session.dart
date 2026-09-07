@@ -62,9 +62,9 @@ class PairingRtcSession implements PairingRtcSessionPort {
   Stream<PairingRtcState> get states => _stateController.stream;
 
   @override
-  @override
   Stream<void> get videoHeartbeats => _videoHeartbeatController.stream;
 
+  @override
   Stream<EncodedVideoPacket> get remoteVideoPackets {
     final EncodedVideoWebRtcSession? session = _videoSession;
     if (session == null) {
