@@ -52,8 +52,10 @@ EncodedVideoPacket packet(int timestamp) {
 }
 
 void main() {
-  test('initializes renderer and serializes packet delivery', () async {
-    final _FakeRenderer renderer = _FakeRenderer();
+  test('acknowledges exactly once after first rendered decoder output', () async {
+    final _FakeRenderer renderer = _FakeRenderer(
+      renderedResults: <bool>[false, true, true],
+    );
     final AndroidTvReceiverPipeline pipeline = AndroidTvReceiverPipeline(
       renderer: renderer,
     );
@@ -104,6 +106,34 @@ void main() {
 
     expect(firstFrameCallbacks, 0);
     expect(renderer.pushed, <int>[1]);
+  });
+
+
+  test('does not ack input-only decoder pushes', () async {
+    final _FakeRenderer renderer = _FakeRenderer(
+      renderedResults: <bool>[false, false],
+    );
+    final AndroidTvReceiverPipeline pipeline = AndroidTvReceiverPipeline(
+      renderer: renderer,
+    );
+    final StreamController<EncodedVideoPacket> packets =
+        StreamController<EncodedVideoPacket>();
+    int firstFrameCallbacks = 0;
+
+    await pipeline.start(
+      packets: packets.stream,
+      width: 1920,
+      height: 1080,
+      onFirstFrameRendered: () => firstFrameCallbacks += 1,
+    );
+
+    packets
+      ..add(packet(1))
+      ..add(packet(2));
+    await packets.close();
+    await pipeline.stop();
+
+    expect(firstFrameCallbacks, 0);
   });
 
   test('surfaces renderer failure without false first-frame ack', () async {
