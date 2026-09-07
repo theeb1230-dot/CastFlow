@@ -7,10 +7,16 @@ import 'package:castflow/features/streaming/domain/repositories/encoded_video_re
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeRenderer implements EncodedVideoRendererPort {
-  _FakeRenderer({this.failPush = false, this.rendered = true});
+  _FakeRenderer({
+    this.failPush = false,
+    this.rendered = true,
+    List<bool>? renderedResults,
+  }) : _renderedResults = renderedResults ?? const <bool>[];
 
   final bool failPush;
   final bool rendered;
+  final List<bool> _renderedResults;
+  int _pushIndex = 0;
   final List<int> pushed = <int>[];
   int? _textureId;
   bool disposed = false;
@@ -33,6 +39,10 @@ class _FakeRenderer implements EncodedVideoRendererPort {
       throw StateError('decoder rejected frame');
     }
     pushed.add(packet.presentationTimeUs);
+    if (_pushIndex < _renderedResults.length) {
+      return _renderedResults[_pushIndex++];
+    }
+    _pushIndex += 1;
     return rendered;
   }
 
@@ -107,7 +117,6 @@ void main() {
     expect(firstFrameCallbacks, 0);
     expect(renderer.pushed, <int>[1]);
   });
-
 
   test('does not ack input-only decoder pushes', () async {
     final _FakeRenderer renderer = _FakeRenderer(
