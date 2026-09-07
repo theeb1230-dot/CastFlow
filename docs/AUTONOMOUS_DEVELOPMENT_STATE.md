@@ -1,10 +1,10 @@
 # Autonomous Development State
 
-Last updated: 2026-09-07
+Last updated: 2026-09-07 13:00 Asia/Riyadh
 Active PR: #31 `Fix first-frame runtime proof and publish 1.0.3+4`
 Working branch: `fix-first-frame-runtime-ack`
 Base main commit: `1a8c63b79f2bc26ce6ce122c0b4d7044a3e3a92b`
-PR head before this handoff update: `efebb5a07db4f50ca693e133a0033676ef46d98a`
+PR head before this handoff update: `c82dc23c1c5bda7b7bad21775044d6238c5e70fc`
 Target version: `1.0.3+4`
 
 ## Source of truth
@@ -30,7 +30,7 @@ This document is a handoff aid only. GitHub main/branches/PRs/CI/logs/releases a
 
 PR #31 is the only open PR.
 
-CI run #154 on head `efebb5a07db4f50ca693e133a0033676ef46d98a` passed:
+CI run #155 on head `c82dc23c1c5bda7b7bad21775044d6238c5e70fc` passed:
 - formatting;
 - flutter analyze;
 - flutter test;
@@ -42,7 +42,12 @@ CI run #154 on head `efebb5a07db4f50ca693e133a0033676ef46d98a` passed:
 - unsigned iPhoneOS app + IPA structure validation;
 - exact APK + APK-TV + IPA triplet gate.
 
-This documentation update creates a new head and therefore requires a fresh CI result before merge.
+The exact validated artifacts exist for this head:
+- `castflow-android-c82dc23c1c5bda7b7bad21775044d6238c5e70fc`;
+- `castflow-ios-unsigned-c82dc23c1c5bda7b7bad21775044d6238c5e70fc`;
+- `CastFlow-1.0.3+4-test-triplet-c82dc23c1c5bda7b7bad21775044d6238c5e70fc`.
+
+PR #31 remains GitHub mergeable/clean, but direct merge and a non-force fast-forward of `main` were blocked by the available write-safety layer in this run. No merge conflict or CI failure is present.
 
 ## Current release readiness
 
@@ -69,10 +74,10 @@ No GitHub Release may be published unless Android Mobile APK + Android TV APK + 
 
 ## Next-run objectives
 
-1. If the fresh CI for this handoff commit is green, merge PR #31.
-2. Verify the main push produces and publishes the exact `1.0.3+4` three-artifact Developer Test Release with SHA-256 and provenance.
-3. Consume physical-device feedback for 1.0.3+4 and require proof that the phone screen appears on Android TV and stays active when the sender leaves the QR page.
-4. If first-frame rendering succeeds, add receiver frame counters and end-to-end startup latency evidence and connect them to RTT/jitter/packet-loss/ABR telemetry.
-5. Harden media reconnect so the video DataChannel and first-frame readiness gate recover after temporary Wi-Fi interruption without a fresh QR scan where feasible.
-6. Continue iOS ReplayKit runtime sender integration and signing/provisioning readiness without claiming installability until it is actually valid.
-7. Review dependency updates reported by CI and only adopt them when compatibility/tests prove no regression.
+1. Re-check PR #31 head and CI; merge immediately if the write path is permitted. Do not open another PR first.
+2. After merge, verify the main push publishes the exact `1.0.3+4` Developer Test Release with Android Mobile APK + Android TV APK + unsigned iOS IPA + SHA256SUMS + BUILD_PROVENANCE from the same commit.
+3. Verify the published release target, asset integrity and version parity.
+4. Consume physical-device feedback for `1.0.3+4`; require proof that the phone screen appears on Android TV and remains active after leaving the QR page.
+5. If first-frame rendering succeeds, add receiver frame counters and end-to-end startup-latency telemetry, connected to RTT/jitter/packet-loss/ABR.
+6. Harden media reconnect so temporary Wi-Fi interruption can recover the video transport and re-establish first-frame readiness without a fresh QR scan where feasible.
+7. Continue iOS ReplayKit runtime sender integration and signing/provisioning readiness without claiming installability until proven.
