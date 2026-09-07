@@ -50,12 +50,12 @@ class _ReceiverPairingView extends StatelessWidget {
               children: <Widget>[
                 Positioned.fill(
                   child: AndroidTvReceiverSurface(
-              packets: cubit.remoteVideoPackets,
-              width: StreamingProfile.balanced.width,
-              height: StreamingProfile.balanced.height,
-              onFirstFrameRendered: cubit.notifyFirstFrameRendered,
-              onFrameRendered: cubit.notifyFrameRendered,
-              onRenderError: cubit.notifyRenderFailure,
+                    packets: cubit.remoteVideoPackets,
+                    width: StreamingProfile.balanced.width,
+                    height: StreamingProfile.balanced.height,
+                    onFirstFrameRendered: cubit.notifyFirstFrameRendered,
+                    onFrameRendered: cubit.notifyFrameRendered,
+                    onRenderError: cubit.notifyRenderFailure,
                     onExit: () {
                       context.read<ReceiverPairingCubit>().stop();
                     },
