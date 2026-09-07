@@ -7,9 +7,10 @@ import 'package:castflow/features/streaming/domain/repositories/encoded_video_re
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeRenderer implements EncodedVideoRendererPort {
-  _FakeRenderer({this.failPush = false});
+  _FakeRenderer({this.failPush = false, this.rendered = true});
 
   final bool failPush;
+  final bool rendered;
   final List<int> pushed = <int>[];
   int? _textureId;
   bool disposed = false;
@@ -26,12 +27,13 @@ class _FakeRenderer implements EncodedVideoRendererPort {
   }
 
   @override
-  Future<void> push(EncodedVideoPacket packet) async {
+  Future<bool> push(EncodedVideoPacket packet) async {
     await Future<void>.delayed(const Duration(milliseconds: 1));
     if (failPush) {
       throw StateError('decoder rejected frame');
     }
     pushed.add(packet.presentationTimeUs);
+    return rendered;
   }
 
   @override
@@ -78,6 +80,30 @@ void main() {
     expect(renderer.pushed, <int>[1, 2, 3]);
     expect(firstFrameCallbacks, 1);
     expect(renderer.disposed, isTrue);
+  });
+
+  test('does not ack when decoder accepts input but renders no output', () async {
+    final _FakeRenderer renderer = _FakeRenderer(rendered: false);
+    final AndroidTvReceiverPipeline pipeline = AndroidTvReceiverPipeline(
+      renderer: renderer,
+    );
+    final StreamController<EncodedVideoPacket> packets =
+        StreamController<EncodedVideoPacket>();
+    int firstFrameCallbacks = 0;
+
+    await pipeline.start(
+      packets: packets.stream,
+      width: 1920,
+      height: 1080,
+      onFirstFrameRendered: () => firstFrameCallbacks += 1,
+    );
+
+    packets.add(packet(1));
+    await packets.close();
+    await pipeline.stop();
+
+    expect(firstFrameCallbacks, 0);
+    expect(renderer.pushed, <int>[1]);
   });
 
   test('surfaces renderer failure without false first-frame ack', () async {
