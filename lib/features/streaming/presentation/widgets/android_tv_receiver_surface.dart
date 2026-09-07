@@ -25,7 +25,8 @@ class AndroidTvReceiverSurface extends StatefulWidget {
   final int height;
   final VoidCallback? onExit;
   final VoidCallback? onFirstFrameRendered;
-  final void Function(int renderedFrames, int presentationTimeUs)? onFrameRendered;
+  final void Function(int renderedFrames, int presentationTimeUs)?
+  onFrameRendered;
   final void Function(Object error)? onRenderError;
 
   @override
