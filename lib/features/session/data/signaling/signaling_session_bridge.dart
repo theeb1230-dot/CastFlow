@@ -114,6 +114,8 @@ class SignalingSessionBridge {
     switch (message.type) {
       case SignalingMessageType.pairingHello:
       case SignalingMessageType.pairingAck:
+      case SignalingMessageType.videoReady:
+      case SignalingMessageType.videoFailed:
         return;
       case SignalingMessageType.offer:
         final Map<String, Object?> answer = await _rtc.acceptOffer(

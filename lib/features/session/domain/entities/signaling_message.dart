@@ -6,6 +6,8 @@ enum SignalingMessageType {
   offer,
   answer,
   iceCandidate,
+  videoReady,
+  videoFailed,
   bye,
 }
 

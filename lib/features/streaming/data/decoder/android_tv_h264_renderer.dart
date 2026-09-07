@@ -38,19 +38,20 @@ class AndroidTvH264Renderer implements EncodedVideoRendererPort {
   }
 
   @override
-  Future<void> push(EncodedVideoPacket packet) async {
+  Future<bool> push(EncodedVideoPacket packet) async {
     if (!Platform.isAndroid) {
-      return;
+      return false;
     }
     if (_textureId == null) {
       throw StateError('Renderer must be initialized before pushing packets.');
     }
 
-    await _channel.invokeMethod<void>('push', <String, Object>{
-      'data': Uint8List.fromList(packet.data),
-      'presentationTimeUs': packet.presentationTimeUs,
-      'flags': packet.flags,
-    });
+    return await _channel.invokeMethod<bool>('push', <String, Object>{
+          'data': Uint8List.fromList(packet.data),
+          'presentationTimeUs': packet.presentationTimeUs,
+          'flags': packet.flags,
+        }) ??
+        false;
   }
 
   @override

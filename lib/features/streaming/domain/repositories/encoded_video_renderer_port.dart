@@ -5,7 +5,9 @@ abstract interface class EncodedVideoRendererPort {
 
   Future<int> initialize({required int width, required int height});
 
-  Future<void> push(EncodedVideoPacket packet);
+  /// Returns true only when this push produced a decoder output frame that
+  /// was released for rendering to the output surface.
+  Future<bool> push(EncodedVideoPacket packet);
 
   Future<void> dispose();
 }

@@ -68,6 +68,24 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
     return session.remoteVideoPackets;
   }
 
+  Future<void> notifyFirstFrameRendered() async {
+    await _rtcSession?.notifyVideoReady();
+  }
+
+  Future<void> notifyRenderFailure(Object error) async {
+    final String reason = 'تعذر تشغيل أول إطار فيديو على جهاز الاستقبال.';
+    await _rtcSession?.notifyVideoFailed(reason);
+    if (!isClosed) {
+      emit(
+        ReceiverPairingState(
+          status: ReceiverPairingStatus.failure,
+          qrData: state.qrData,
+          errorMessage: reason,
+        ),
+      );
+    }
+  }
+
   Future<void> start() async {
     if (state.status == ReceiverPairingStatus.starting ||
         state.status == ReceiverPairingStatus.ready ||
