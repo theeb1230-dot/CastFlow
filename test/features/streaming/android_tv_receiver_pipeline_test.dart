@@ -100,6 +100,38 @@ void main() {
     },
   );
 
+  test('reports continuity only for rendered decoder outputs', () async {
+    final _FakeRenderer renderer = _FakeRenderer(
+      renderedResults: <bool>[false, true, false, true],
+    );
+    final AndroidTvReceiverPipeline pipeline = AndroidTvReceiverPipeline(
+      renderer: renderer,
+    );
+    final StreamController<EncodedVideoPacket> packets =
+        StreamController<EncodedVideoPacket>();
+    final List<(int, int)> progress = <(int, int)>[];
+
+    await pipeline.start(
+      packets: packets.stream,
+      width: 1920,
+      height: 1080,
+      onFrameRendered: (int renderedFrames, int presentationTimeUs) {
+        progress.add((renderedFrames, presentationTimeUs));
+      },
+    );
+
+    packets
+      ..add(packet(10))
+      ..add(packet(20))
+      ..add(packet(30))
+      ..add(packet(40));
+
+    await packets.close();
+    await pipeline.stop();
+
+    expect(progress, <(int, int)>[(1, 20), (2, 40)]);
+  });
+
   test(
     'does not ack when decoder accepts input but renders no output',
     () async {
