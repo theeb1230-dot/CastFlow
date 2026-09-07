@@ -23,40 +23,27 @@ class AndroidTvReceiverPipeline {
     void Function()? onFirstFrameRendered,
     void Function(Object error, StackTrace stackTrace)? onRenderError,
   }) async {
-    if (_disposed) {
-      throw StateError('Receiver pipeline is disposed.');
-    }
-    if (_subscription != null) {
-      throw StateError('Receiver pipeline is already active.');
-    }
+    if (_disposed) throw StateError('Receiver pipeline is disposed.');
+    if (_subscription != null) throw StateError('Receiver pipeline is already active.');
 
-    final int textureId = await _renderer.initialize(
-      width: width,
-      height: height,
-    );
-
+    final int textureId = await _renderer.initialize(width: width, height: height);
     _firstFrameRendered = false;
     _subscription = packets.listen(
-      (EncodedVideoPacket packet) {
-        _enqueue(
-          packet,
-          onFirstFrameRendered: onFirstFrameRendered,
-          onRenderError: onRenderError,
-        );
-      },
-      onError: (Object error, StackTrace stackTrace) {
-        onRenderError?.call(error, stackTrace);
-      },
+      (EncodedVideoPacket packet) => _enqueue(
+        packet,
+        onFirstFrameRendered: onFirstFrameRendered,
+        onRenderError: onRenderError,
+      ),
+      onError: (Object error, StackTrace stackTrace) =>
+          onRenderError?.call(error, stackTrace),
       cancelOnError: false,
     );
-
     return textureId;
   }
 
   Future<void> stop() async {
     await _subscription?.cancel();
     _subscription = null;
-
     try {
       await _tail;
     } finally {
@@ -67,9 +54,7 @@ class AndroidTvReceiverPipeline {
   }
 
   Future<void> dispose() async {
-    if (_disposed) {
-      return;
-    }
+    if (_disposed) return;
     _disposed = true;
     await stop();
   }
@@ -81,8 +66,8 @@ class AndroidTvReceiverPipeline {
   }) {
     _tail = _tail.then((_) async {
       try {
-        await _renderer.push(packet);
-        if (!_firstFrameRendered) {
+        final bool rendered = await _renderer.push(packet);
+        if (rendered && !_firstFrameRendered) {
           _firstFrameRendered = true;
           onFirstFrameRendered?.call();
         }
