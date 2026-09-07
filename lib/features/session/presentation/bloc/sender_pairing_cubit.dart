@@ -59,9 +59,6 @@ class SenderPairingCubit extends Cubit<SenderPairingState> {
   StreamSubscription<void>? _videoHeartbeatSubscription;
   Timer? _videoHeartbeatWatchdog;
   DateTime? _lastVideoHeartbeatAt;
-  StreamSubscription<void>? _videoHeartbeatSubscription;
-  Timer? _videoHeartbeatWatchdog;
-  DateTime? _lastVideoHeartbeatAt;
 
   Future<void> pair(String qrData) async {
     if (state.status == SenderPairingStatus.connecting ||
@@ -208,28 +205,6 @@ class SenderPairingCubit extends Cubit<SenderPairingState> {
 
   void _startVideoHeartbeatWatchdog() {
     unawaited(_videoHeartbeatSubscription?.cancel());
-    _videoHeartbeatWatchdog?.cancel();
-    _lastVideoHeartbeatAt = DateTime.now();
-    _videoHeartbeatSubscription = _rtcSession!.videoHeartbeats.listen((_) {
-      _lastVideoHeartbeatAt = DateTime.now();
-    });
-    _videoHeartbeatWatchdog = Timer.periodic(const Duration(seconds: 1), (_) {
-      final DateTime? lastHeartbeat = _lastVideoHeartbeatAt;
-      if (lastHeartbeat == null ||
-          DateTime.now().difference(lastHeartbeat) <=
-              const Duration(seconds: 5)) {
-        return;
-      }
-      unawaited(
-        _handleRuntimeFailure(
-          'توقف جهاز الاستقبال عن تأكيد استمرار عرض الفيديو. أعد الاتصال ثم حاول المشاركة مجددًا.',
-        ),
-      );
-    });
-  }
-
-  void _startVideoHeartbeatWatchdog() {
-    _videoHeartbeatSubscription?.cancel();
     _videoHeartbeatWatchdog?.cancel();
     _lastVideoHeartbeatAt = DateTime.now();
     _videoHeartbeatSubscription = _rtcSession!.videoHeartbeats.listen((_) {
