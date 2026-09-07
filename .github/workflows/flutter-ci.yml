@@ -169,7 +169,7 @@ jobs:
         run: flutter build ios --simulator --debug
       - name: Build unsigned iPhoneOS release app
         run: |
-          flutter build ios --release --no-codesign --build-name=1.0.4 --build-number=4
+          flutter build ios --release --no-codesign --build-name=1.0.4 --build-number=5
           test -d build/ios/iphoneos/Runner.app
           test -d build/ios/iphoneos/Runner.app/PlugIns/BroadcastUploadExtension.appex
       - name: Package and validate unsigned IPA
