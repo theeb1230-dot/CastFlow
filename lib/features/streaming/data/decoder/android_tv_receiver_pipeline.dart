@@ -21,6 +21,7 @@ class AndroidTvReceiverPipeline {
     required int width,
     required int height,
     void Function()? onFirstFrameRendered,
+    void Function()? onFrameRendered,
     void Function(Object error, StackTrace stackTrace)? onRenderError,
   }) async {
     if (_disposed) {
@@ -39,6 +40,7 @@ class AndroidTvReceiverPipeline {
       (EncodedVideoPacket packet) => _enqueue(
         packet,
         onFirstFrameRendered: onFirstFrameRendered,
+        onFrameRendered: onFrameRendered,
         onRenderError: onRenderError,
       ),
       onError: (Object error, StackTrace stackTrace) =>
@@ -71,14 +73,18 @@ class AndroidTvReceiverPipeline {
   void _enqueue(
     EncodedVideoPacket packet, {
     void Function()? onFirstFrameRendered,
+    void Function()? onFrameRendered,
     void Function(Object error, StackTrace stackTrace)? onRenderError,
   }) {
     _tail = _tail.then((_) async {
       try {
         final bool rendered = await _renderer.push(packet);
-        if (rendered && !_firstFrameRendered) {
-          _firstFrameRendered = true;
-          onFirstFrameRendered?.call();
+        if (rendered) {
+          onFrameRendered?.call();
+          if (!_firstFrameRendered) {
+            _firstFrameRendered = true;
+            onFirstFrameRendered?.call();
+          }
         }
       } catch (error, stackTrace) {
         onRenderError?.call(error, stackTrace);
