@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -44,15 +46,48 @@ class _ReceiverPairingView extends StatelessWidget {
           if (state.status == ReceiverPairingStatus.connected) {
             final ReceiverPairingCubit cubit = context
                 .read<ReceiverPairingCubit>();
-            return AndroidTvReceiverSurface(
+            return Stack(
+              children: <Widget>[
+                Positioned.fill(
+                  child: AndroidTvReceiverSurface(
               packets: cubit.remoteVideoPackets,
               width: StreamingProfile.balanced.width,
               height: StreamingProfile.balanced.height,
               onFirstFrameRendered: cubit.notifyFirstFrameRendered,
+              onFrameRendered: cubit.notifyFrameRendered,
               onRenderError: cubit.notifyRenderFailure,
-              onExit: () {
-                context.read<ReceiverPairingCubit>().stop();
-              },
+                    onExit: () {
+                      context.read<ReceiverPairingCubit>().stop();
+                    },
+                  ),
+                ),
+                Positioned(
+                  left: 24,
+                  bottom: 24,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceDark.withValues(alpha: 0.88),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      child: Text(
+                        'Rendered: ${state.renderedFrames}  •  PTS: ${state.lastRenderedPresentationTimeUs ?? 0} µs',
+                        style: const TextStyle(
+                          color: AppTheme.primaryCyan,
+                          fontFeatures: <FontFeature>[
+                            FontFeature.tabularFigures(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             );
           }
 
