@@ -5,7 +5,7 @@ abstract interface class EncodedVideoRendererPort {
 
   Future<int> initialize({required int width, required int height});
 
-  Future<bool> push(EncodedVideoPacket packet);
+  Future<void> push(EncodedVideoPacket packet);
 
   Future<void> dispose();
 }
