@@ -1,53 +1,64 @@
 # Autonomous Development State
 
-Last updated: 2026-09-07 22:55 Asia/Riyadh
-Active PR: #31 `Fix first-frame runtime proof and publish 1.0.3+4`
-Working branch: `fix-first-frame-runtime-ack`
-Current corrected head before this handoff update: `4a6ddc43176839096d67b1d35734e12fd0763ce3`
-Base main version: `1.0.2+3`
-Target version: `1.0.3+4`
+Last updated: 2026-09-07 23:12 Asia/Riyadh
+Active PR: none
+Main head: `3f43a2e0b9983f4b4eec2dbb2828d898757f169f`
+Current version: `1.0.3+4`
+Latest release: `v1.0.3-test.178`
 
 ## Source of truth
 GitHub main, PR state, commits, workflow logs and Releases override this handoff when they differ.
 
 ## Current run
-- PR #31 is the only open PR.
-- Earlier CI attempts exposed formatting/analyzer regressions and a deeper first-frame proof defect.
-- The renderer contract now returns `Future<bool>` from `push()`.
-- `HardwareDecoderBridge` returns true only when MediaCodec produced a non-codec-config, non-EOS output buffer that was released to the Surface.
-- `AndroidTvH264Renderer` propagates that native rendered boolean.
-- `AndroidTvReceiverPipeline` now acknowledges first-frame readiness only when the renderer returns `rendered == true`.
-- Input-only decoder pushes return no acknowledgement.
-- Renderer failures surface through `onRenderError` and the receiver sends `videoFailed`.
-- Sender startup waits for `videoReady` or `videoFailed`; capture/encoder are stopped on startup failure or timeout.
-- Regression coverage now includes: no ack for input-only decoder work, exactly one ack after the first rendered output, and no false ack on renderer failure.
-- The receiver pipeline and its tests were fully rewritten after merge drift introduced literal escaped newline characters and an inconsistent fake renderer API.
-- Version target remains `1.0.3+4`.
-- Latest corrected CI is expected to run on the handoff-updated head; do not merge until all required jobs are green.
+- PR #31 `Fix first-frame runtime proof and publish 1.0.3+4` merged successfully into main.
+- PR #31 final pull-request CI run #177 completed successfully.
+- First-frame readiness is now tied to an actual Android TV decoder output frame released by MediaCodec for rendering, not merely successful decoder input submission.
+- `EncodedVideoRendererPort.push` returns a rendered-frame boolean.
+- `AndroidTvH264Renderer` propagates the native MediaCodec rendered result.
+- `AndroidTvReceiverPipeline` sends the first-frame acknowledgement only after `rendered == true`; input-only work does not acknowledge readiness.
+- Renderer errors remain surfaced and do not generate false readiness.
+- No PR is currently open.
+- Main publication produced the required release triplet under GitHub Releases.
+
+## Release published in this run
+GitHub prerelease: `v1.0.3-test.178`
+Source commit: `3f43a2e0b9983f4b4eec2dbb2828d898757f169f`
+Version: `1.0.3+4`
+
+Assets verified present:
+- `CastFlow-1.0.3+4-Android-Mobile.apk`
+- `CastFlow-1.0.3+4-Android-TV.apk`
+- `CastFlow-1.0.3+4-iOS-unsigned.ipa`
+- `SHA256SUMS`
+- `BUILD_PROVENANCE.txt`
+
+The IPA is unsigned and is not claimed to be directly installable on a normal iPhone.
 
 ## Release readiness
 Formal grade: Developer Test only; not yet Experimental.
 
-Latest published Developer Test before this run: `v1.0.2-test.151`.
+Evidence achieved:
+- merged first-frame runtime proof;
+- green PR CI;
+- same-commit Android Mobile APK + Android TV APK + unsigned iOS IPA triplet;
+- GitHub prerelease exists under Releases;
+- SHA-256 digests and build provenance assets exist;
+- Android Mobile and TV artifacts are separated.
 
-Required before publishing 1.0.3+4:
-- full green analyze/test/stress/performance/native compile;
-- validated Android Mobile APK and Android TV APK;
-- validated unsigned iOS IPA with ReplayKit extension;
-- exact same-commit triplet gate with SHA256SUMS and BUILD_PROVENANCE;
-- main push publication workflow success.
-
-Still missing for Experimental or higher:
+Still missing for Experimental:
 - physical Android phone -> Android TV visible-frame proof;
+- evidence the app opens and the primary end-to-end runtime path completes without crash on physical devices;
 - persistent rendering evidence beyond startup acknowledgement;
 - physical iOS ReplayKit runtime proof;
 - signed/provisioned installable iOS IPA;
 - reconnect/interruption/background device-matrix evidence.
 
+## Packaging note
+The documentation update in this run is not release-worthy runtime code. It records the already-published 1.0.3+4 release state only, so no additional triplet is required for this documentation-only handoff commit.
+
 ## أهداف التشغيل التالي
-1. Finish PR #31 CI on the corrected first-frame implementation; fix any remaining failures on the same branch only.
-2. Merge PR #31 only when analyze/tests/stress/performance/Android/iOS/triplet gates are all green.
-3. Verify the main push publishes the exact `1.0.3+4` Developer Test triplet: Android Mobile APK + Android TV APK + unsigned iOS IPA.
-4. Verify SHA256SUMS and BUILD_PROVENANCE match the main merge commit and release assets are downloadable.
-5. Obtain or require physical Android phone -> Android TV visible-frame proof before promoting to Experimental.
-6. After #31/release closure, continue with physical-device persistence, reconnect/interruption recovery, and iOS runtime/signing evidence.
+1. Re-check main, releases, CI, and open PRs, then start the highest-value runtime/device-evidence gap with one PR only.
+2. Add durable runtime telemetry/evidence for rendered-frame continuity, not merely first-frame startup acknowledgement, if physical-device evidence is still unavailable.
+3. Strengthen reconnect/interruption recovery evidence for Android Mobile -> Android TV sessions.
+4. Keep release-readiness fail-closed and do not promote to Experimental without physical visible-frame/runtime proof.
+5. If a release-worthy fix merges, produce and publish a new Android Mobile APK + Android TV APK + iOS IPA triplet from the exact same commit/version before ending that run.
