@@ -19,27 +19,47 @@ class ReceiverPairingState extends Equatable {
     this.status = ReceiverPairingStatus.idle,
     this.qrData,
     this.errorMessage,
+    this.renderedFrames = 0,
+    this.lastRenderedPresentationTimeUs,
   });
 
   final ReceiverPairingStatus status;
   final String? qrData;
   final String? errorMessage;
+  final int renderedFrames;
+  final int? lastRenderedPresentationTimeUs;
 
   ReceiverPairingState copyWith({
     ReceiverPairingStatus? status,
     String? qrData,
     String? errorMessage,
     bool clearError = false,
+    int? renderedFrames,
+    int? lastRenderedPresentationTimeUs,
+    bool clearRenderTelemetry = false,
   }) {
     return ReceiverPairingState(
       status: status ?? this.status,
       qrData: qrData ?? this.qrData,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+      renderedFrames: clearRenderTelemetry
+          ? 0
+          : renderedFrames ?? this.renderedFrames,
+      lastRenderedPresentationTimeUs: clearRenderTelemetry
+          ? null
+          : lastRenderedPresentationTimeUs ??
+                this.lastRenderedPresentationTimeUs,
     );
   }
 
   @override
-  List<Object?> get props => <Object?>[status, qrData, errorMessage];
+  List<Object?> get props => <Object?>[
+    status,
+    qrData,
+    errorMessage,
+    renderedFrames,
+    lastRenderedPresentationTimeUs,
+  ];
 }
 
 class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
@@ -70,6 +90,18 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
 
   Future<void> notifyFirstFrameRendered() async {
     await _rtcSession?.notifyVideoReady();
+  }
+
+  void notifyFrameRendered(int renderedFrames, int presentationTimeUs) {
+    if (isClosed || state.status != ReceiverPairingStatus.connected) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        renderedFrames: renderedFrames,
+        lastRenderedPresentationTimeUs: presentationTimeUs,
+      ),
+    );
   }
 
   Future<void> notifyRenderFailure(Object error) async {
@@ -124,6 +156,7 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
               ReceiverPairingState(
                 status: ReceiverPairingStatus.connected,
                 qrData: state.qrData,
+                renderedFrames: 0,
               ),
             );
             break;
