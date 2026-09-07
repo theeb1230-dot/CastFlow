@@ -59,6 +59,7 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
   LocalSignalingServer? _server;
   PairingRtcSessionPort? _rtcSession;
   StreamSubscription<PairingRtcState>? _rtcStateSubscription;
+  int _renderedFramesSinceHeartbeat = 0;
 
   Stream<EncodedVideoPacket> get remoteVideoPackets {
     final PairingRtcSessionPort? session = _rtcSession;
@@ -69,7 +70,17 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
   }
 
   Future<void> notifyFirstFrameRendered() async {
+    _renderedFramesSinceHeartbeat = 0;
     await _rtcSession?.notifyVideoReady();
+  }
+
+  Future<void> notifyFrameRendered() async {
+    _renderedFramesSinceHeartbeat += 1;
+    if (_renderedFramesSinceHeartbeat < 30) {
+      return;
+    }
+    _renderedFramesSinceHeartbeat = 0;
+    await _rtcSession?.notifyVideoHeartbeat();
   }
 
   Future<void> notifyRenderFailure(Object error) async {
@@ -192,6 +203,7 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
     _rtcStateSubscription = null;
     await _rtcSession?.dispose();
     _rtcSession = null;
+    _renderedFramesSinceHeartbeat = 0;
     await _server?.dispose();
     _server = null;
   }
