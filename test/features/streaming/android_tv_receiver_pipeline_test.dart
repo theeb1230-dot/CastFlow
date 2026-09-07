@@ -77,12 +77,14 @@ void main() {
       final StreamController<EncodedVideoPacket> packets =
           StreamController<EncodedVideoPacket>();
       int firstFrameCallbacks = 0;
+      int renderedFrameCallbacks = 0;
 
       final int textureId = await pipeline.start(
         packets: packets.stream,
         width: 1920,
         height: 1080,
         onFirstFrameRendered: () => firstFrameCallbacks += 1,
+        onFrameRendered: () => renderedFrameCallbacks += 1,
       );
 
       packets
@@ -96,6 +98,7 @@ void main() {
       expect(textureId, 42);
       expect(renderer.pushed, <int>[1, 2, 3]);
       expect(firstFrameCallbacks, 1);
+      expect(renderedFrameCallbacks, 2);
       expect(renderer.disposed, isTrue);
     },
   );
