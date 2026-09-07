@@ -16,8 +16,9 @@ class _FakeRenderer implements EncodedVideoRendererPort {
   final bool failPush;
   final bool rendered;
   final List<bool> _renderedResults;
-  int _pushIndex = 0;
   final List<int> pushed = <int>[];
+
+  int _pushIndex = 0;
   int? _textureId;
   bool disposed = false;
 
@@ -38,10 +39,12 @@ class _FakeRenderer implements EncodedVideoRendererPort {
     if (failPush) {
       throw StateError('decoder rejected frame');
     }
+
     pushed.add(packet.presentationTimeUs);
     if (_pushIndex < _renderedResults.length) {
       return _renderedResults[_pushIndex++];
     }
+
     _pushIndex += 1;
     return rendered;
   }
