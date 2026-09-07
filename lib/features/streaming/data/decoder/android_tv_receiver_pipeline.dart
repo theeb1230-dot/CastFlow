@@ -12,6 +12,7 @@ class AndroidTvReceiverPipeline {
   StreamSubscription<EncodedVideoPacket>? _subscription;
   Future<void> _tail = Future<void>.value();
   bool _disposed = false;
+  bool _firstFrameRendered = false;
 
   int? get textureId => _renderer.textureId;
 
@@ -19,6 +20,8 @@ class AndroidTvReceiverPipeline {
     required Stream<EncodedVideoPacket> packets,
     required int width,
     required int height,
+    void Function()? onFirstFrameRendered,
+    void Function(Object error, StackTrace stackTrace)? onRenderError,
   }) async {
     if (_disposed) {
       throw StateError('Receiver pipeline is disposed.');
@@ -32,9 +35,18 @@ class AndroidTvReceiverPipeline {
       height: height,
     );
 
+    _firstFrameRendered = false;
     _subscription = packets.listen(
-      _enqueue,
-      onError: (_) {},
+      (EncodedVideoPacket packet) {
+        _enqueue(
+          packet,
+          onFirstFrameRendered: onFirstFrameRendered,
+          onRenderError: onRenderError,
+        );
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        onRenderError?.call(error, stackTrace);
+      },
       cancelOnError: false,
     );
 
@@ -49,6 +61,7 @@ class AndroidTvReceiverPipeline {
       await _tail;
     } finally {
       _tail = Future<void>.value();
+      _firstFrameRendered = false;
       await _renderer.dispose();
     }
   }
@@ -61,7 +74,21 @@ class AndroidTvReceiverPipeline {
     await stop();
   }
 
-  void _enqueue(EncodedVideoPacket packet) {
-    _tail = _tail.then((_) => _renderer.push(packet));
+  void _enqueue(
+    EncodedVideoPacket packet, {
+    void Function()? onFirstFrameRendered,
+    void Function(Object error, StackTrace stackTrace)? onRenderError,
+  }) {
+    _tail = _tail.then((_) async {
+      try {
+        await _renderer.push(packet);
+        if (!_firstFrameRendered) {
+          _firstFrameRendered = true;
+          onFirstFrameRendered?.call();
+        }
+      } catch (error, stackTrace) {
+        onRenderError?.call(error, stackTrace);
+      }
+    });
   }
 }
