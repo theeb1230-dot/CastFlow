@@ -92,7 +92,10 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
     await _rtcSession?.notifyVideoReady();
   }
 
-  void notifyFrameRendered(int renderedFrames, int presentationTimeUs) {
+  Future<void> notifyFrameRendered(
+    int renderedFrames,
+    int presentationTimeUs,
+  ) async {
     if (isClosed || state.status != ReceiverPairingStatus.connected) {
       return;
     }
@@ -102,6 +105,9 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
         lastRenderedPresentationTimeUs: presentationTimeUs,
       ),
     );
+    if (renderedFrames % 30 == 0) {
+      await _rtcSession?.notifyVideoHeartbeat();
+    }
   }
 
   Future<void> notifyRenderFailure(Object error) async {
