@@ -66,8 +66,9 @@ class AndroidTvReceiverPipeline {
   }) {
     _tail = _tail.then((_) async {
       try {
-        final bool rendered = await _renderer.push(packet);
-        if (rendered && !_firstFrameRendered) {
+        await _renderer.push(packet);
+        final bool candidateFrame = (packet.flags & 2) == 0;
+        if (candidateFrame && !_firstFrameRendered) {
           _firstFrameRendered = true;
           onFirstFrameRendered?.call();
         }
