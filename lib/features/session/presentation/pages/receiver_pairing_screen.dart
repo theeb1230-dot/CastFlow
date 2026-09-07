@@ -42,7 +42,8 @@ class _ReceiverPairingView extends StatelessWidget {
       body: BlocBuilder<ReceiverPairingCubit, ReceiverPairingState>(
         builder: (context, state) {
           if (state.status == ReceiverPairingStatus.connected) {
-            final ReceiverPairingCubit cubit = context.read<ReceiverPairingCubit>();
+            final ReceiverPairingCubit cubit = context
+                .read<ReceiverPairingCubit>();
             return AndroidTvReceiverSurface(
               packets: cubit.remoteVideoPackets,
               width: StreamingProfile.balanced.width,
