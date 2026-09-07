@@ -3,7 +3,7 @@
 Last updated: 2026-09-07 15:20 Asia/Riyadh
 Active PR: #31 `Fix first-frame runtime proof and publish 1.0.3+4`
 Working branch: `fix-first-frame-runtime-ack`
-Current head: `c6eafc4826e438b22dfe2191137dea3536241ef3`
+Current head before this handoff update: `85bdfb96405e05d61e68e306f389ca92ce194ab3`
 Base main: `1a8c63b79f2bc26ce6ce122c0b4d7044a3e3a92b`
 Target version: `1.0.3+4`
 
@@ -15,9 +15,9 @@ GitHub main, PR state, commits, workflow logs and Releases override this handoff
 - Previous CI #156 on head 80ddbbe5 passed the full Android/iOS/triplet gates.
 - Review found the first-frame proof was too weak: successful decoder input is not proof of rendered MediaCodec output.
 - HardwareDecoderBridge now returns true only after a non-codec-config, non-EOS output buffer is released for rendering to the Surface.
-- The receiver pipeline was kept buildable and explicitly excludes codec-config input from first-frame candidacy while the Dart bridge result wiring is completed.
+- AndroidTvH264Renderer now propagates the native MediaCodec boolean render result. The remaining gap is consuming that result in the receiver pipeline through the typed renderer contract.
 - Attempts to finish the Dart MethodChannel return-value wiring were blocked by the available write-safety layer during this run.
-- CI run #34120994043 on c6eafc failed the formatting gate before analyze/tests. iOS smoke continued independently.
+- Latest CI run #34121391873 on 85bdfb failed the formatting gate in android_tv_receiver_pipeline.dart before analyze/tests; iOS smoke continued independently.
 - Do not merge PR #31 in this state and do not publish 1.0.3+4 from this head.
 
 ## Release readiness
