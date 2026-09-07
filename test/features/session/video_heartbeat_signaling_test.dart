@@ -31,8 +31,7 @@ class _FakeOrchestrator extends WebRtcOrchestrator {
       StreamController<RTCPeerConnectionState>.broadcast();
 
   @override
-  Stream<RTCPeerConnectionState> get connectionStates =>
-      stateController.stream;
+  Stream<RTCPeerConnectionState> get connectionStates => stateController.stream;
 
   @override
   Stream<RTCIceCandidate> get localCandidates =>
