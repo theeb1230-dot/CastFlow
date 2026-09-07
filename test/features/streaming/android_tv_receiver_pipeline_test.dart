@@ -65,61 +65,67 @@ EncodedVideoPacket packet(int timestamp) {
 }
 
 void main() {
-  test('acknowledges exactly once after first rendered decoder output', () async {
-    final _FakeRenderer renderer = _FakeRenderer(
-      renderedResults: <bool>[false, true, true],
-    );
-    final AndroidTvReceiverPipeline pipeline = AndroidTvReceiverPipeline(
-      renderer: renderer,
-    );
-    final StreamController<EncodedVideoPacket> packets =
-        StreamController<EncodedVideoPacket>();
-    int firstFrameCallbacks = 0;
+  test(
+    'acknowledges exactly once after first rendered decoder output',
+    () async {
+      final _FakeRenderer renderer = _FakeRenderer(
+        renderedResults: <bool>[false, true, true],
+      );
+      final AndroidTvReceiverPipeline pipeline = AndroidTvReceiverPipeline(
+        renderer: renderer,
+      );
+      final StreamController<EncodedVideoPacket> packets =
+          StreamController<EncodedVideoPacket>();
+      int firstFrameCallbacks = 0;
 
-    final int textureId = await pipeline.start(
-      packets: packets.stream,
-      width: 1920,
-      height: 1080,
-      onFirstFrameRendered: () => firstFrameCallbacks += 1,
-    );
+      final int textureId = await pipeline.start(
+        packets: packets.stream,
+        width: 1920,
+        height: 1080,
+        onFirstFrameRendered: () => firstFrameCallbacks += 1,
+      );
 
-    packets
-      ..add(packet(1))
-      ..add(packet(2))
-      ..add(packet(3));
+      packets
+        ..add(packet(1))
+        ..add(packet(2))
+        ..add(packet(3));
 
-    await packets.close();
-    await pipeline.stop();
+      await packets.close();
+      await pipeline.stop();
 
-    expect(textureId, 42);
-    expect(renderer.pushed, <int>[1, 2, 3]);
-    expect(firstFrameCallbacks, 1);
-    expect(renderer.disposed, isTrue);
-  });
+      expect(textureId, 42);
+      expect(renderer.pushed, <int>[1, 2, 3]);
+      expect(firstFrameCallbacks, 1);
+      expect(renderer.disposed, isTrue);
+    },
+  );
 
-  test('does not ack when decoder accepts input but renders no output', () async {
-    final _FakeRenderer renderer = _FakeRenderer(rendered: false);
-    final AndroidTvReceiverPipeline pipeline = AndroidTvReceiverPipeline(
-      renderer: renderer,
-    );
-    final StreamController<EncodedVideoPacket> packets =
-        StreamController<EncodedVideoPacket>();
-    int firstFrameCallbacks = 0;
+  test(
+    'does not ack when decoder accepts input but renders no output',
+    () async {
+      final _FakeRenderer renderer = _FakeRenderer(rendered: false);
+      final AndroidTvReceiverPipeline pipeline = AndroidTvReceiverPipeline(
+        renderer: renderer,
+      );
+      final StreamController<EncodedVideoPacket> packets =
+          StreamController<EncodedVideoPacket>();
+      int firstFrameCallbacks = 0;
 
-    await pipeline.start(
-      packets: packets.stream,
-      width: 1920,
-      height: 1080,
-      onFirstFrameRendered: () => firstFrameCallbacks += 1,
-    );
+      await pipeline.start(
+        packets: packets.stream,
+        width: 1920,
+        height: 1080,
+        onFirstFrameRendered: () => firstFrameCallbacks += 1,
+      );
 
-    packets.add(packet(1));
-    await packets.close();
-    await pipeline.stop();
+      packets.add(packet(1));
+      await packets.close();
+      await pipeline.stop();
 
-    expect(firstFrameCallbacks, 0);
-    expect(renderer.pushed, <int>[1]);
-  });
+      expect(firstFrameCallbacks, 0);
+      expect(renderer.pushed, <int>[1]);
+    },
+  );
 
   test('does not ack input-only decoder pushes', () async {
     final _FakeRenderer renderer = _FakeRenderer(
