@@ -115,6 +115,7 @@ class SignalingSessionBridge {
       case SignalingMessageType.pairingHello:
       case SignalingMessageType.pairingAck:
       case SignalingMessageType.videoReady:
+      case SignalingMessageType.videoHeartbeat:
       case SignalingMessageType.videoFailed:
         return;
       case SignalingMessageType.offer:
