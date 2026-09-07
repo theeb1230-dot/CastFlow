@@ -61,8 +61,8 @@ class HardwareDecoderBridge(
                 }
 
                 try {
-                    push(data, presentationTimeUs, flags)
-                    result.success(null)
+                    val rendered = push(data, presentationTimeUs, flags)
+                    result.success(rendered)
                 } catch (error: Throwable) {
                     result.error(
                         "decoder_push_failed",
@@ -112,7 +112,7 @@ class HardwareDecoderBridge(
         return entry.id()
     }
 
-    private fun push(data: ByteArray, presentationTimeUs: Long, flags: Int) {
+    private fun push(data: ByteArray, presentationTimeUs: Long, flags: Int): Boolean {
         val decoder = codec ?: throw IllegalStateException("Decoder is not initialized.")
 
         val inputIndex = decoder.dequeueInputBuffer(inputTimeoutUs)
@@ -133,19 +133,26 @@ class HardwareDecoderBridge(
             flags,
         )
 
-        drainOutput(decoder)
+        return drainOutput(decoder)
     }
 
-    private fun drainOutput(decoder: MediaCodec) {
+    private fun drainOutput(decoder: MediaCodec): Boolean {
         val info = MediaCodec.BufferInfo()
+        var renderedFrame = false
 
         while (true) {
             val outputIndex = decoder.dequeueOutputBuffer(info, 0)
             when {
-                outputIndex >= 0 -> decoder.releaseOutputBuffer(outputIndex, true)
-                outputIndex == MediaCodec.INFO_TRY_AGAIN_LATER -> return
+                outputIndex >= 0 -> {
+                    val codecConfig = (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0
+                    val endOfStream = (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0
+                    val render = info.size > 0 && !codecConfig && !endOfStream
+                    decoder.releaseOutputBuffer(outputIndex, render)
+                    renderedFrame = renderedFrame || render
+                }
+                outputIndex == MediaCodec.INFO_TRY_AGAIN_LATER -> return renderedFrame
                 outputIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> continue
-                else -> return
+                else -> return renderedFrame
             }
         }
     }
