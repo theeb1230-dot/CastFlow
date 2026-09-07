@@ -49,6 +49,7 @@ class _ReceiverPairingView extends StatelessWidget {
               width: StreamingProfile.balanced.width,
               height: StreamingProfile.balanced.height,
               onFirstFrameRendered: cubit.notifyFirstFrameRendered,
+              onFrameRendered: cubit.notifyFrameRendered,
               onRenderError: cubit.notifyRenderFailure,
               onExit: () {
                 context.read<ReceiverPairingCubit>().stop();
