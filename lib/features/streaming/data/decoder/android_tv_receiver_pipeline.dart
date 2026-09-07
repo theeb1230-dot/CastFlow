@@ -13,6 +13,7 @@ class AndroidTvReceiverPipeline {
   Future<void> _tail = Future<void>.value();
   bool _disposed = false;
   bool _firstFrameRendered = false;
+  int _renderedFrames = 0;
 
   int? get textureId => _renderer.textureId;
 
@@ -21,6 +22,7 @@ class AndroidTvReceiverPipeline {
     required int width,
     required int height,
     void Function()? onFirstFrameRendered,
+    void Function(int renderedFrames, int presentationTimeUs)? onFrameRendered,
     void Function(Object error, StackTrace stackTrace)? onRenderError,
   }) async {
     if (_disposed) {
@@ -35,10 +37,12 @@ class AndroidTvReceiverPipeline {
       height: height,
     );
     _firstFrameRendered = false;
+    _renderedFrames = 0;
     _subscription = packets.listen(
       (EncodedVideoPacket packet) => _enqueue(
         packet,
         onFirstFrameRendered: onFirstFrameRendered,
+        onFrameRendered: onFrameRendered,
         onRenderError: onRenderError,
       ),
       onError: (Object error, StackTrace stackTrace) =>
@@ -56,6 +60,7 @@ class AndroidTvReceiverPipeline {
     } finally {
       _tail = Future<void>.value();
       _firstFrameRendered = false;
+      _renderedFrames = 0;
       await _renderer.dispose();
     }
   }
@@ -71,14 +76,19 @@ class AndroidTvReceiverPipeline {
   void _enqueue(
     EncodedVideoPacket packet, {
     void Function()? onFirstFrameRendered,
+    void Function(int renderedFrames, int presentationTimeUs)? onFrameRendered,
     void Function(Object error, StackTrace stackTrace)? onRenderError,
   }) {
     _tail = _tail.then((_) async {
       try {
         final bool rendered = await _renderer.push(packet);
-        if (rendered && !_firstFrameRendered) {
-          _firstFrameRendered = true;
-          onFirstFrameRendered?.call();
+        if (rendered) {
+          _renderedFrames += 1;
+          onFrameRendered?.call(_renderedFrames, packet.presentationTimeUs);
+          if (!_firstFrameRendered) {
+            _firstFrameRendered = true;
+            onFirstFrameRendered?.call();
+          }
         }
       } catch (error, stackTrace) {
         onRenderError?.call(error, stackTrace);
