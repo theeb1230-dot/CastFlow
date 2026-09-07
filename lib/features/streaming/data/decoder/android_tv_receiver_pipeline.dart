@@ -24,8 +24,9 @@ class AndroidTvReceiverPipeline {
     void Function(Object error, StackTrace stackTrace)? onRenderError,
   }) async {
     if (_disposed) throw StateError('Receiver pipeline is disposed.');
-    if (_subscription != null)
+    if (_subscription != null) {
       throw StateError('Receiver pipeline is already active.');
+    }
 
     final int textureId = await _renderer.initialize(
       width: width,
