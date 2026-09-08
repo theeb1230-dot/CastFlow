@@ -1,7 +1,7 @@
 # Autonomous Development State
 
 Last updated: 2026-09-08 Asia/Riyadh
-Active PR: pending creation from `fix-render-heartbeat-cadence`
+Active PR: #34 `fix-render-heartbeat-cadence`
 Working branch: `fix-render-heartbeat-cadence`
 Base main: `871a4a8723c081e5f86f899c4a6908cd13cd3900`
 Base release: `1.0.4+5`
@@ -12,13 +12,15 @@ GitHub main, PR state, commits, workflow logs and Releases override this handoff
 
 ## Current run
 - Verified main at `871a4a8723c081e5f86f899c4a6908cd13cd3900`; Flutter CI run #192 is green.
-- No PR was open at the start of this run.
+- PR #34 is the single open PR for this run.
 - Found a false-stall risk: receiver heartbeat was emitted every 30 rendered frames while sender failed the stream after 5 seconds without a heartbeat. Low FPS could therefore stop a healthy stream.
 - Fixed `RenderHeartbeatCadence` to anchor elapsed PTS to the last emitted heartbeat, not the previous frame. PTS rollback now resets the baseline without a false heartbeat.
 - Wired the cadence into `ReceiverPairingCubit` and removed the `renderedFrames % 30` rule.
 - Converted sender heartbeat liveness from wall-clock `DateTime.now()` to monotonic `Stopwatch`.
 - Made runtime-failure handling idempotent so concurrent WebRTC/projection/heartbeat failures cannot run overlapping capture shutdowns.
 - Added regression coverage for normal cadence, low FPS, PTS rollback, and explicit reset.
+- CI #193 exposed two concrete failures: stale iOS validator metadata and Dart formatting drift. The iOS validator was corrected to 1.0.5+6; CI #195 confirms iOS ReplayKit simulator build, unsigned iPhoneOS build, IPA validation, and artifact upload succeed.
+- The remaining blocker is a formatter-only two-line wrap in `receiver_pairing_cubit.dart`. GitHub write safety blocked repeated attempts to apply that specific source-file replacement during this run, so no merge was performed and no release was published.
 - Bumped application/release pipeline to `1.0.5+6`; any merged product change must publish a new exact Mobile APK + TV APK + unsigned IPA Developer Test triplet.
 - Golden UX product direction remains: Android TV receiver-only auto-start QR; Android/iOS sender-only; QR zoom; direct-local media path with automatic transport negotiation; iOS ReplayKit with only unavoidable system consent.
 - Quality/stability remain priority #1: no default cloud media relay, bounded latency, render continuity, ABR, reconnect and packet-loss resilience.
@@ -36,7 +38,8 @@ Still missing for Experimental:
 - physical-device app-open/runtime smoke;
 - physical iOS ReplayKit runtime proof;
 - reconnect/interruption/background device evidence;
-- new 1.0.5+6 PR CI and post-merge triplet release.
+- PR #34 CI is not fully green yet: iOS ReplayKit/unsigned IPA validation is green after fixing validator metadata; analyze-test is blocked only by one remaining Dart formatting diff in `receiver_pairing_cubit.dart`.
+- post-merge 1.0.5+6 triplet release.
 
 ## أهداف التشغيل التالي
 1. Heartbeat reliability PR
