@@ -4,7 +4,7 @@ class RenderHeartbeatCadence {
   }) : assert(interval > Duration.zero);
 
   final Duration interval;
-  int? _lastPresentationTimeUs;
+  int? _lastHeartbeatPresentationTimeUs;
 
   bool registerRenderedFrame(int presentationTimeUs) {
     if (presentationTimeUs < 0) {
@@ -15,21 +15,26 @@ class RenderHeartbeatCadence {
       );
     }
 
-    final int? previous = _lastPresentationTimeUs;
-    _lastPresentationTimeUs = presentationTimeUs;
-
-    if (previous == null) {
+    final int? baseline = _lastHeartbeatPresentationTimeUs;
+    if (baseline == null) {
+      _lastHeartbeatPresentationTimeUs = presentationTimeUs;
       return false;
     }
 
-    if (presentationTimeUs < previous) {
-      return true;
+    if (presentationTimeUs < baseline) {
+      _lastHeartbeatPresentationTimeUs = presentationTimeUs;
+      return false;
     }
 
-    return presentationTimeUs - previous >= interval.inMicroseconds;
+    if (presentationTimeUs - baseline < interval.inMicroseconds) {
+      return false;
+    }
+
+    _lastHeartbeatPresentationTimeUs = presentationTimeUs;
+    return true;
   }
 
   void reset() {
-    _lastPresentationTimeUs = null;
+    _lastHeartbeatPresentationTimeUs = null;
   }
 }
