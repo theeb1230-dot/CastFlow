@@ -11,6 +11,7 @@ import '../../data/pairing/pairing_qr_codec.dart';
 import '../../data/pairing/pairing_rtc_session.dart';
 import '../../data/signaling/local_signaling_server.dart';
 import '../../domain/entities/handshake_payload.dart';
+import '../../domain/services/render_heartbeat_cadence.dart';
 
 enum ReceiverPairingStatus { idle, starting, ready, connected, failure }
 
@@ -75,6 +76,8 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
   final PairingQrCodec _codec;
   final Random _random;
   final PairingRtcSessionPort Function() _rtcSessionFactory;
+  final RenderHeartbeatCadence _renderHeartbeatCadence =
+      RenderHeartbeatCadence();
 
   LocalSignalingServer? _server;
   PairingRtcSessionPort? _rtcSession;
@@ -105,7 +108,7 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
         lastRenderedPresentationTimeUs: presentationTimeUs,
       ),
     );
-    if (renderedFrames % 30 == 0) {
+    if (_renderHeartbeatCadence.registerRenderedFrame(presentationTimeUs)) {
       await _rtcSession?.notifyVideoHeartbeat();
     }
   }
@@ -227,6 +230,7 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
   }
 
   Future<void> _disposeRuntime() async {
+    _renderHeartbeatCadence.reset();
     await _rtcStateSubscription?.cancel();
     _rtcStateSubscription = null;
     await _rtcSession?.dispose();
