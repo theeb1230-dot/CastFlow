@@ -1,7 +1,6 @@
 class RenderHeartbeatCadence {
-  RenderHeartbeatCadence({
-    this.interval = const Duration(seconds: 1),
-  }) : assert(interval > Duration.zero);
+  RenderHeartbeatCadence({this.interval = const Duration(seconds: 1)})
+    : assert(interval > Duration.zero);
 
   final Duration interval;
   int? _lastHeartbeatPresentationTimeUs;
