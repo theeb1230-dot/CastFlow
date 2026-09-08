@@ -76,7 +76,8 @@ class ReceiverPairingCubit extends Cubit<ReceiverPairingState> {
   final PairingQrCodec _codec;
   final Random _random;
   final PairingRtcSessionPort Function() _rtcSessionFactory;
-  final RenderHeartbeatCadence _renderHeartbeatCadence = RenderHeartbeatCadence();
+  final RenderHeartbeatCadence _renderHeartbeatCadence =
+      RenderHeartbeatCadence();
 
   LocalSignalingServer? _server;
   PairingRtcSessionPort? _rtcSession;
