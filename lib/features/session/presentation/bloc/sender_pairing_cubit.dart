@@ -58,7 +58,8 @@ class SenderPairingCubit extends Cubit<SenderPairingState> {
   StreamSubscription<void>? _projectionInterruptionSubscription;
   StreamSubscription<void>? _videoHeartbeatSubscription;
   Timer? _videoHeartbeatWatchdog;
-  DateTime? _lastVideoHeartbeatAt;
+  Stopwatch? _videoHeartbeatClock;
+  bool _handlingRuntimeFailure = false;
 
   Future<void> pair(String qrData) async {
     if (state.status == SenderPairingStatus.connecting ||
@@ -206,15 +207,16 @@ class SenderPairingCubit extends Cubit<SenderPairingState> {
   void _startVideoHeartbeatWatchdog() {
     unawaited(_videoHeartbeatSubscription?.cancel());
     _videoHeartbeatWatchdog?.cancel();
-    _lastVideoHeartbeatAt = DateTime.now();
+    _videoHeartbeatClock = Stopwatch()..start();
     _videoHeartbeatSubscription = _rtcSession!.videoHeartbeats.listen((_) {
-      _lastVideoHeartbeatAt = DateTime.now();
+      _videoHeartbeatClock
+        ?..reset()
+        ..start();
     });
     _videoHeartbeatWatchdog = Timer.periodic(const Duration(seconds: 1), (_) {
-      final DateTime? lastHeartbeat = _lastVideoHeartbeatAt;
-      if (lastHeartbeat == null ||
-          DateTime.now().difference(lastHeartbeat) <=
-              const Duration(seconds: 5)) {
+      final Stopwatch? heartbeatClock = _videoHeartbeatClock;
+      if (heartbeatClock == null ||
+          heartbeatClock.elapsed <= const Duration(seconds: 5)) {
         return;
       }
       unawaited(
@@ -226,15 +228,23 @@ class SenderPairingCubit extends Cubit<SenderPairingState> {
   }
 
   Future<void> _handleRuntimeFailure(String message) async {
-    await _stopCaptureOnly();
-    if (!isClosed) {
-      emit(
-        SenderPairingState(
-          status: SenderPairingStatus.failure,
-          peerName: state.peerName,
-          errorMessage: message,
-        ),
-      );
+    if (_handlingRuntimeFailure) {
+      return;
+    }
+    _handlingRuntimeFailure = true;
+    try {
+      await _stopCaptureOnly();
+      if (!isClosed) {
+        emit(
+          SenderPairingState(
+            status: SenderPairingStatus.failure,
+            peerName: state.peerName,
+            errorMessage: message,
+          ),
+        );
+      }
+    } finally {
+      _handlingRuntimeFailure = false;
     }
   }
 
@@ -248,7 +258,8 @@ class SenderPairingCubit extends Cubit<SenderPairingState> {
     _videoHeartbeatWatchdog = null;
     await _videoHeartbeatSubscription?.cancel();
     _videoHeartbeatSubscription = null;
-    _lastVideoHeartbeatAt = null;
+    _videoHeartbeatClock?.stop();
+    _videoHeartbeatClock = null;
     await _projectionInterruptionSubscription?.cancel();
     _projectionInterruptionSubscription = null;
     await _encoder.stop();
