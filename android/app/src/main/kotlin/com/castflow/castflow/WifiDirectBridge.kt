@@ -19,6 +19,7 @@ class WifiDirectBridge(
     companion object {
         private const val channelName = "castflow/wifi_direct"
         private const val permissionRequestCode = 4127
+        private val deviceAddressPattern = Regex("^(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$")
     }
 
     private val methodChannel = MethodChannel(messenger, channelName)
@@ -40,9 +41,11 @@ class WifiDirectBridge(
             "discoverPeers" -> withPermission(result) { discoverPeers(result) }
             "getPeers" -> withPermission(result) { getPeers(result) }
             "connect" -> withPermission(result) {
-                val deviceAddress = call.argument<String>("deviceAddress")
-                if (deviceAddress.isNullOrBlank()) {
+                val deviceAddress = call.argument<String>("deviceAddress")?.trim()
+                if (deviceAddress.isNullOrEmpty()) {
                     result.error("invalid_argument", "deviceAddress is required.", null)
+                } else if (!deviceAddressPattern.matches(deviceAddress)) {
+                    result.error("invalid_argument", "deviceAddress must be a Wi-Fi Direct MAC address.", null)
                 } else {
                     connect(deviceAddress, result)
                 }
